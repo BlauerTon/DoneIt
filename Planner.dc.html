@@ -41,8 +41,8 @@
     <div style="margin-top:auto; display:flex; flex-direction:column; gap:2px; border-top:1px solid #EFEFE9; padding-top:14px;">
       <div style="padding:8px 12px; font-size:13px; color:#7C7C72;">Settings</div>
       <div style="display:flex; align-items:center; gap:9px; padding:8px 12px;">
-        <div style="width:24px; height:24px; border-radius:50%; background:#E4DAFB; color:#4A3A7A; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">JD</div>
-        <div style="font-size:13px; color:#4C4C44;">Jordan Dey</div>
+        <div style="width:24px; height:24px; border-radius:50%; background:#E4DAFB; color:#4A3A7A; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">SN</div>
+        <div style="font-size:13px; color:#4C4C44;">Sidney</div>
       </div>
     </div>
   </aside>
@@ -94,7 +94,8 @@
                 <sc-for list="{{ unscheduled }}" as="t" hint-placeholder-count="3">
                   <div draggable="true" onDragStart="{{ t.dragStart }}" style="display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:9px; background:{{ t.bg }}; border-left:3px solid {{ t.bar }}; cursor:grab;">
                     <button onClick="{{ t.toggle }}" style="width:15px; height:15px; flex:0 0 15px; border:1.5px solid {{ t.ink }}; border-radius:4px; background:transparent; cursor:pointer; padding:0; font-size:10px; line-height:1; color:{{ t.ink }};">{{ t.mark }}</button>
-                    <span style="font-size:13.5px; font-weight:500; color:{{ t.ink }}; text-decoration:{{ t.strike }};">{{ t.title }}</span>
+                    <span style="font-size:13.5px; font-weight:500; color:{{ t.ink }}; text-decoration:{{ t.strike }}; flex:1; min-width:0;">{{ t.title }}</span>
+                    <button type="button" onClick="{{ t.remove }}" title="Delete" style="border:none; background:transparent; color:{{ t.ink }}; opacity:0.4; cursor:pointer; font-size:12px; padding:0 2px; line-height:1;" style-hover="opacity:1;">✕</button>
                   </div>
                 </sc-for>
                 <sc-if value="{{ noUnscheduled }}" hint-placeholder-val="{{ false }}">
@@ -143,7 +144,10 @@
             <div style="font-size:12px; color:#A6A69C; padding:4px 0 12px;">{{ unassignedCount }}</div>
             <div style="display:flex; flex-direction:column; gap:7px;">
               <sc-for list="{{ unassigned }}" as="t" hint-placeholder-count="4">
-                <div draggable="true" onDragStart="{{ t.dragStart }}" style="padding:9px 11px; border-radius:9px; background:{{ t.bg }}; border-left:3px solid {{ t.bar }}; font-size:13px; font-weight:500; color:{{ t.ink }}; cursor:grab;">{{ t.title }}</div>
+                <div draggable="true" onDragStart="{{ t.dragStart }}" style="display:flex; align-items:center; justify-content:space-between; gap:6px; padding:9px 11px; border-radius:9px; background:{{ t.bg }}; border-left:3px solid {{ t.bar }}; font-size:13px; font-weight:500; color:{{ t.ink }}; cursor:grab;">
+                  <span style="flex:1; min-width:0;">{{ t.title }}</span>
+                  <button type="button" onClick="{{ t.remove }}" title="Delete" style="border:none; background:transparent; color:{{ t.ink }}; opacity:0.4; cursor:pointer; font-size:12px; padding:0 2px; line-height:1;" style-hover="opacity:1;">✕</button>
+                </div>
               </sc-for>
             </div>
           </div>
@@ -197,6 +201,7 @@
                         <option value="{{ o.value }}">{{ o.label }}</option>
                       </sc-for>
                     </select>
+                    <button type="button" onClick="{{ t.remove }}" title="Delete task" style="border:none; background:transparent; color:#B4B4AA; cursor:pointer; font-size:14px; padding:2px 6px; border-radius:4px; line-height:1;" style-hover="color:#E5484D; background:#FEECEE;">✕</button>
                   </div>
                 </sc-for>
               </div>
@@ -268,12 +273,23 @@ class Component extends DCLogic {
   DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   DOWFULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   MONTH = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  TODAY = '2026-09-14';
-  WEEK_START = '2026-09-14';
+  TODAY = (() => {
+    const d = new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  })();
+  WEEK_START = (() => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const mon = new Date(d.setDate(diff));
+    const p = (n) => String(n).padStart(2, '0');
+    return mon.getFullYear() + '-' + p(mon.getMonth() + 1) + '-' + p(mon.getDate());
+  })();
 
   state = {
     view: 'today',
-    date: '2026-09-14',
+    date: this.TODAY,
     modalOpen: false,
     draftTitle: '',
     draftDay: '',
@@ -281,27 +297,33 @@ class Component extends DCLogic {
     draftEnd: '',
     draftColor: 'blue',
     dragId: null,
-    nextId: 100,
-    tasks: [
-      { id: 1, title: 'Morning Run', color: 'green', date: '2026-09-14', start: '06:00', end: '07:00', done: true },
-      { id: 2, title: 'Build ATS automation', color: 'blue', date: '2026-09-14', start: '08:00', end: '10:30', done: false },
-      { id: 3, title: 'Study German', color: 'purple', date: '2026-09-14', start: '11:00', end: '12:00', done: false },
-      { id: 4, title: 'Lunch', color: 'yellow', date: '2026-09-14', start: '13:00', end: '13:45', done: false },
-      { id: 5, title: 'Gym', color: 'orange', date: '2026-09-14', start: '17:30', end: '18:30', done: false },
-      { id: 6, title: 'Read documentation', color: 'blue', date: '2026-09-14', start: null, end: null, done: false },
-      { id: 7, title: 'Review notes', color: 'pink', date: '2026-09-14', start: null, end: null, done: false },
-      { id: 8, title: 'Client work', color: 'blue', date: '2026-09-15', start: '09:00', end: '12:00', done: false },
-      { id: 9, title: 'Top Wellness website', color: 'purple', date: '2026-09-15', start: '14:00', end: '16:00', done: false },
-      { id: 10, title: 'Take a Run', color: 'green', date: '2026-09-16', start: '06:00', end: '07:00', done: false },
-      { id: 11, title: 'Website development', color: 'blue', date: '2026-09-16', start: null, end: null, done: false },
-      { id: 12, title: 'Study German', color: 'purple', date: '2026-09-16', start: '19:00', end: '20:00', done: false },
-      { id: 13, title: 'Portfolio review', color: 'orange', date: '2026-09-17', start: '10:00', end: '11:00', done: false },
-      { id: 14, title: 'Finish portfolio', color: 'pink', date: '2026-09-18', start: null, end: null, done: false },
-      { id: 15, title: 'Clean workspace', color: 'yellow', date: null, start: null, end: null, done: false },
-      { id: 16, title: 'Plan next sprint', color: 'blue', date: null, start: null, end: null, done: false },
-      { id: 17, title: 'Call the dentist', color: 'pink', date: null, start: null, end: null, done: false },
-    ],
+    nextId: 1,
+    tasks: [],
   };
+
+  constructor(props) {
+    super(props);
+    const saved = this.loadTasks();
+    const maxId = saved.reduce((m, t) => Math.max(m, t.id || 0), 0);
+    this.state = {
+      ...this.state,
+      tasks: saved,
+      nextId: maxId + 1,
+    };
+  }
+
+  loadTasks() {
+    try {
+      const raw = localStorage.getItem('doneit_tasks');
+      if (raw) return JSON.parse(raw);
+    } catch (_) {}
+    return [];
+  }
+  saveTasks(tasks) {
+    try {
+      localStorage.setItem('doneit_tasks', JSON.stringify(tasks));
+    } catch (_) {}
+  }
 
   // --- date helpers -------------------------------------------------
   parse(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); }
@@ -313,6 +335,14 @@ class Component extends DCLogic {
   longLabel(iso) {
     const d = this.parse(iso);
     return this.DOWFULL[d.getDay()] + ', ' + this.MONTH[d.getMonth()] + ' ' + d.getDate();
+  }
+  getWeekTitle() {
+    const start = this.parse(this.WEEK_START);
+    const end = this.parse(this.shift(this.WEEK_START, 6));
+    if (start.getMonth() === end.getMonth()) {
+      return this.MONTH[start.getMonth()] + ' ' + start.getDate() + ' – ' + end.getDate();
+    }
+    return this.MONTH[start.getMonth()] + ' ' + start.getDate() + ' – ' + this.MONTH[end.getMonth()] + ' ' + end.getDate();
   }
   mins(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
   fmt(m) {
@@ -332,16 +362,44 @@ class Component extends DCLogic {
 
   // --- mutations ----------------------------------------------------
   patch(id, fields) {
-    this.setState((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...fields } : t)) }));
+    this.setState((s) => {
+      const tasks = s.tasks.map((t) => (t.id === id ? { ...t, ...fields } : t));
+      this.saveTasks(tasks);
+      return { tasks };
+    });
   }
   toggleDone(id) {
-    this.setState((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t)) }));
+    this.setState((s) => {
+      const tasks = s.tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+      this.saveTasks(tasks);
+      return { tasks };
+    });
   }
   addTask(fields) {
-    this.setState((s) => ({
-      nextId: s.nextId + 1,
-      tasks: s.tasks.concat([{ id: s.nextId, title: fields.title, color: fields.color || 'blue', date: fields.date || null, start: fields.start || null, end: fields.end || null, done: false }]),
-    }));
+    this.setState((s) => {
+      const newTask = {
+        id: s.nextId,
+        title: fields.title,
+        color: fields.color || 'blue',
+        date: fields.date || null,
+        start: fields.start || null,
+        end: fields.end || null,
+        done: false,
+      };
+      const tasks = s.tasks.concat([newTask]);
+      this.saveTasks(tasks);
+      return {
+        nextId: s.nextId + 1,
+        tasks,
+      };
+    });
+  }
+  deleteTask(id) {
+    this.setState((s) => {
+      const tasks = s.tasks.filter((t) => t.id !== id);
+      this.saveTasks(tasks);
+      return { tasks };
+    });
   }
   dragStart(id) {
     return (e) => {
@@ -362,6 +420,7 @@ class Component extends DCLogic {
       opacity: t.done ? '0.55' : '1',
       range: t.start ? t.start + ' – ' + t.end : (opts && opts.blankRange ? '' : 'Unscheduled'),
       toggle: () => this.toggleDone(t.id),
+      remove: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.deleteTask(t.id); },
       dragStart: this.dragStart(t.id),
     };
   }
@@ -493,7 +552,7 @@ class Component extends DCLogic {
       strip, hours, blocks, lookahead,
       unscheduled: unscheduled.map((t) => this.taskChip(t)),
       noUnscheduled: unscheduled.length === 0,
-      weekTitle: 'September 14 – 20',
+      weekTitle: this.getWeekTitle(),
       weekDays,
       unassigned: unassignedList.map((t) => this.taskChip(t)),
       unassignedCount: unassignedList.length === 1 ? '1 task waiting' : unassignedList.length + ' tasks waiting',
@@ -516,6 +575,7 @@ class Component extends DCLogic {
             range: t.start ? t.start + ' – ' + t.end : '',
             day: t.date || '',
             toggle: () => this.toggleDone(t.id),
+            remove: () => this.deleteTask(t.id),
             assign: (e) => this.patch(t.id, { date: e.target.value || null, start: e.target.value ? t.start : null, end: e.target.value ? t.end : null }),
           };
         }),
