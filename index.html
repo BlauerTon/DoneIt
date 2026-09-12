@@ -3,8 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DoneIt - Daily & Weekly Planner</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#2F44C8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="DoneIt">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" type="image/png" href="./icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./support.js"></script>
+<script>
+  window.__deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    window.__deferredInstallPrompt = e;
+  });
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch((err) => {
+        console.warn('[PWA] ServiceWorker registration failed:', err);
+      });
+    });
+  }
+</script>
 </head>
 <body>
 <x-dc>
@@ -24,9 +47,9 @@
 </helmet>
 
 <sc-if value="{{ isAuthenticated }}" hint-placeholder-val="{{ false }}">
-<div style="display:flex; align-items:stretch; min-height:100vh; font-family:Figtree, Helvetica, Arial, sans-serif;">
+<div style="display:flex; align-items:flex-start; min-height:100vh; font-family:Figtree, Helvetica, Arial, sans-serif;">
 
-  <aside style="width:232px; flex:0 0 232px; background:#FFFFFF; border-right:1px solid #E7E7E1; padding:22px 16px; display:flex; flex-direction:column; gap:26px;">
+  <aside style="width:232px; flex:0 0 232px; height:100vh; position:sticky; top:0; background:#FFFFFF; border-right:1px solid #E7E7E1; padding:22px 16px; display:flex; flex-direction:column; gap:20px; box-sizing:border-box; overflow-y:auto; z-index:10;">
     <div style="display:flex; align-items:center; gap:9px; padding:0 6px;">
       <div style="font-size:17px; font-weight:700; letter-spacing:-0.01em;">{{ greeting }}</div>
     </div>
@@ -47,6 +70,14 @@
         <span style="width:6px; height:6px; border-radius:50%; background:{{ syncColor }};"></span>
         <span>{{ syncStatusText }}</span>
       </div>
+      <button type="button" onClick="{{ installApp }}" title="Download DoneIt App" style="display:flex; align-items:center; gap:8px; width:100%; padding:7px 11px; border:1px solid #E2E2DB; border-radius:8px; background:#FAFAFA; color:#4C4C44; font-size:12px; font-weight:600; cursor:pointer;" style-hover="background:#EEF1FF; color:#2F44C8; border-color:#C3CDFA;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Download App</span>
+      </button>
       <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 12px 2px;">
         <div style="display:flex; align-items:center; gap:9px; min-width:0; flex:1;">
           <div style="width:28px; height:28px; flex:0 0 28px; border-radius:50%; background:#E4DAFB; color:#4A3A7A; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">{{ userInitials }}</div>
@@ -274,27 +305,22 @@
 </sc-if>
 
 <sc-if value="{{ isNotAuthenticated }}" hint-placeholder-val="{{ true }}">
-  <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:#F7F7F4; font-family:Figtree, Helvetica, Arial, sans-serif; padding:24px;">
-    <div style="width:100%; max-width:400px; background:#FFFFFF; border:1px solid #E7E7E1; border-radius:18px; padding:32px 28px; box-shadow:0 8px 30px rgba(28,28,24,0.06); display:flex; flex-direction:column; gap:20px;">
-      <div>
-        <div style="font-size:22px; font-weight:700; letter-spacing:-0.02em; color:#23231F;">DoneIt Planner</div>
-        <div style="font-size:13px; color:#8A8A80; margin-top:3px;">Please sign in to access your planner and tasks.</div>
-      </div>
-
-      <button type="button" onClick="{{ signInWithGoogle }}" style="display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:10px 14px; border:1px solid #E2E2DB; border-radius:10px; background:#FFFFFF; color:#23231F; font-size:13.5px; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.04);" style-hover="background:#F7F7F4; border-color:#C9C9C0;">
-        <svg width="18" height="18" viewBox="0 0 24 24">
-          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-        </svg>
-        <span>Continue with Google</span>
-      </button>
-
-      <div style="display:flex; align-items:center; gap:12px; margin:-4px 0;">
-        <div style="flex:1; height:1px; background:#EFEFE9;"></div>
-        <span style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:#A6A69C; text-transform:uppercase;">or with email</span>
-        <div style="flex:1; height:1px; background:#EFEFE9;"></div>
+  <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:url('./image.jpg') center center / cover no-repeat fixed; font-family:Figtree, Helvetica, Arial, sans-serif; padding:24px; position:relative;">
+    <div style="position:absolute; inset:0; background:rgba(15, 23, 42, 0.28); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);"></div>
+    <div style="position:relative; z-index:1; width:100%; max-width:410px; background:rgba(255, 255, 255, 0.95); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid rgba(255, 255, 255, 0.85); border-radius:22px; padding:32px 28px; box-shadow:0 24px 60px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.08); display:flex; flex-direction:column; gap:20px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <div>
+          <div style="font-size:22px; font-weight:700; letter-spacing:-0.02em; color:#23231F;">DoneIt Planner</div>
+          <div style="font-size:13px; color:#6E6E64; margin-top:3px;">Please sign in to access your planner and tasks.</div>
+        </div>
+        <button type="button" onClick="{{ installApp }}" title="Download / Install App" style="display:inline-flex; align-items:center; gap:5px; padding:6px 11px; border:1px solid #E2E2DB; border-radius:10px; background:#FFFFFF; color:#2F44C8; font-size:12px; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.05); white-space:nowrap;" style-hover="background:#EEF1FF;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Download</span>
+        </button>
       </div>
 
       <div style="display:flex; background:#F4F4F0; padding:3px; border-radius:10px; gap:4px;">
@@ -314,7 +340,7 @@
         <sc-if value="{{ isSignUpMode }}" hint-placeholder-val="{{ false }}">
           <label style="display:flex; flex-direction:column; gap:6px;">
             <span style="font-size:12px; font-weight:600; color:#5C5C54;">Full Name</span>
-            <input type="text" value="{{ authFullName }}" onChange="{{ setAuthFullName }}" placeholder="e.g. Sidney Nduti" style="padding:10px 13px; border:1px solid #E2E2DB; border-radius:10px; font-size:14px;" />
+            <input type="text" value="{{ authFullName }}" onChange="{{ setAuthFullName }}" placeholder="e.g. Alex Morgan" style="padding:10px 13px; border:1px solid #E2E2DB; border-radius:10px; font-size:14px;" />
           </label>
         </sc-if>
 
@@ -344,10 +370,50 @@
 </sc-if>
 
 <sc-if value="{{ isAuthChecking }}" hint-placeholder-val="{{ false }}">
-  <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:#F7F7F4; font-family:Figtree, Helvetica, Arial, sans-serif;">
-    <div style="display:flex; align-items:center; gap:10px; color:#7C7C72; font-size:14px; font-weight:500;">
-      <span style="width:16px; height:16px; border:2px solid #2F44C8; border-top-color:transparent; border-radius:50%; animation:sc-spin 0.8s linear infinite;"></span>
+  <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:url('./image.jpg') center center / cover no-repeat fixed; font-family:Figtree, Helvetica, Arial, sans-serif; position:relative;">
+    <div style="position:absolute; inset:0; background:rgba(15, 23, 42, 0.35); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);"></div>
+    <div style="position:relative; z-index:1; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.92); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); padding:16px 24px; border-radius:14px; box-shadow:0 16px 40px rgba(0,0,0,0.2); color:#23231F; font-size:14px; font-weight:600;">
+      <span style="width:18px; height:18px; border:2.5px solid #2F44C8; border-top-color:transparent; border-radius:50%; animation:sc-spin 0.8s linear infinite;"></span>
       <span>Loading DoneIt...</span>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ showInstallModal }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed; inset:0; background:rgba(20,20,18,0.5); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:9999; padding:20px;">
+    <div style="width:100%; max-width:440px; background:#FFFFFF; border:1px solid #E7E7E1; border-radius:18px; padding:26px 24px; box-shadow:0 24px 50px rgba(0,0,0,0.25); display:flex; flex-direction:column; gap:18px; font-family:Figtree, sans-serif;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-size:18px; font-weight:700; color:#23231F; display:flex; align-items:center; gap:8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2F44C8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Download & Install DoneIt</span>
+        </div>
+        <button type="button" onClick="{{ closeInstallModal }}" style="border:none; background:none; font-size:18px; color:#8A8A80; cursor:pointer; padding:4px;" style-hover="color:#23231F;">✕</button>
+      </div>
+      <div style="font-size:13.5px; line-height:1.5; color:#5C5C54; display:flex; flex-direction:column; gap:12px;">
+        <p style="margin:0;">DoneIt can be downloaded and installed as a standalone app on your desktop computer or mobile phone:</p>
+        <div style="background:#F7F7F4; border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:6px;">
+          <div style="font-weight:600; color:#23231F;">💻 Windows / Mac (Chrome & Edge)</div>
+          <div style="font-size:12.5px; color:#6E6E64;">Click the <strong>Install</strong> button (icon with computer monitor and down arrow, or ⊕) in the browser address bar at the top right, then click <em>Install</em>.</div>
+        </div>
+        <div style="background:#F7F7F4; border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:6px;">
+          <div style="font-weight:600; color:#23231F;">📱 iPhone & iPad (Safari)</div>
+          <div style="font-size:12.5px; color:#6E6E64;">Tap the <strong>Share</strong> button at the bottom of Safari, scroll down, and select <strong>Add to Home Screen</strong>.</div>
+        </div>
+        <div style="background:#F7F7F4; border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:6px;">
+          <div style="font-weight:600; color:#23231F;">🤖 Android (Chrome)</div>
+          <div style="font-size:12.5px; color:#6E6E64;">Tap the three dots menu (⋮) in the top right, then select <strong>Install App</strong> or <strong>Add to Home Screen</strong>.</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <sc-if value="{{ canDirectInstall }}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{ triggerDirectInstall }}" style="padding:9px 18px; border:none; border-radius:10px; background:#2F44C8; color:#FFFFFF; font-size:13.5px; font-weight:600; cursor:pointer;" style-hover="background:#2637A8;">Install Directly</button>
+        </sc-if>
+        <button type="button" onClick="{{ closeInstallModal }}" style="padding:9px 16px; border:1px solid #E2E2DB; border-radius:10px; background:#FFFFFF; color:#5C5C54; font-size:13.5px; font-weight:600; cursor:pointer;" style-hover="background:#F7F7F4;">Close</button>
+      </div>
     </div>
   </div>
 </sc-if>
@@ -413,6 +479,7 @@ class Component extends DCLogic {
     authSubmitting: false,
     authError: '',
     authMessage: '',
+    showInstallModal: false,
   };
 
   constructor(props) {
@@ -669,25 +736,24 @@ class Component extends DCLogic {
     this.saveTasks([]);
   }
 
-  async signInWithGoogle() {
-    const client = getSupabase();
-    if (!client) {
-      this.setState({ authError: 'Supabase client is not available.' });
-      return;
+  installApp() {
+    this.setState({ showInstallModal: true });
+    if (window.__deferredInstallPrompt) {
+      try {
+        window.__deferredInstallPrompt.prompt();
+      } catch (_) {}
     }
-    this.setState({ authSubmitting: true, authError: '', authMessage: '' });
-    try {
-      const { error } = await client.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin + window.location.pathname,
-        },
+  }
+
+  triggerDirectInstall() {
+    if (window.__deferredInstallPrompt) {
+      window.__deferredInstallPrompt.prompt();
+      window.__deferredInstallPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          window.__deferredInstallPrompt = null;
+          this.setState({ showInstallModal: false });
+        }
       });
-      if (error) {
-        this.setState({ authError: error.message, authSubmitting: false });
-      }
-    } catch (err) {
-      this.setState({ authError: err.message || 'Failed to sign in with Google.', authSubmitting: false });
     }
   }
 
@@ -1000,7 +1066,11 @@ class Component extends DCLogic {
       authSubmitting: s.authSubmitting,
       authSubmitText: s.authSubmitting ? 'Please wait...' : (s.authMode === 'signup' ? 'Create Account' : 'Sign In'),
       submitAuth: (e) => (s.authMode === 'signup' ? this.handleSignUp(e) : this.handleSignIn(e)),
-      signInWithGoogle: () => this.signInWithGoogle(),
+      installApp: () => this.installApp(),
+      canDirectInstall: !!window.__deferredInstallPrompt,
+      triggerDirectInstall: () => this.triggerDirectInstall(),
+      showInstallModal: s.showInstallModal,
+      closeInstallModal: () => this.setState({ showInstallModal: false }),
       isDay: s.view === 'today',
       isWeek: s.view === 'week',
       isTasks: s.view === 'tasks',
