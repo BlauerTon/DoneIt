@@ -2,8 +2,8 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DoneIt - Daily & Weekly Planner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DoneIt Planner</title>
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#2F44C8">
 <meta name="mobile-web-app-capable" content="yes">
@@ -32,281 +32,570 @@
 <body>
 <x-dc>
 <helmet>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
   * { box-sizing: border-box; }
   body { margin: 0; background: #F7F7F4; color: #23231F; -webkit-font-smoothing: antialiased; }
+  body.dark-mode { background: #121215; color: #F3F3F7; }
   a { color: #2F44C8; }
   a:hover { color: #1F2F96; }
   input, button, select, textarea { font: inherit; color: inherit; }
   input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #2F44C8; outline-offset: 1px; }
   @keyframes sc-spin { to { transform: rotate(360deg); } }
+
+  /* Smart Time Input group */
+  .time-input-box:focus-within {
+    border-color: #2F44C8 !important;
+    box-shadow: 0 0 0 2px rgba(47, 68, 200, 0.2);
+  }
+
+  /* Scrollbar polish */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(140,140,150,0.3); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(140,140,150,0.5); }
+
+  /* Mobile vs Desktop responsive layout rules */
+  @media (max-width: 768px) {
+    .desktop-sidebar {
+      display: none !important;
+    }
+    .mobile-header {
+      display: flex !important;
+    }
+    .mobile-bottom-nav {
+      display: flex !important;
+    }
+    .app-main-content {
+      padding-bottom: 84px !important;
+    }
+    .day-main-layout {
+      flex-direction: column !important;
+      padding: 10px 16px 40px !important;
+      gap: 16px !important;
+    }
+    .day-side-section {
+      width: 100% !important;
+      flex: 1 1 auto !important;
+      min-width: 0 !important;
+    }
+    .day-header-wrap {
+      padding: 14px 16px 10px !important;
+    }
+    .week-header-wrap {
+      padding: 14px 16px 12px !important;
+    }
+    .week-scroll-container {
+      padding: 0 16px 20px !important;
+    }
+    .tasks-container {
+      padding: 16px 16px 84px !important;
+    }
+    .modal-card {
+      width: calc(100vw - 32px) !important;
+      max-width: 420px !important;
+      margin: 16px !important;
+      padding: 20px 18px !important;
+      max-height: 90vh !important;
+      overflow-y: auto !important;
+    }
+  }
+
+  @media (min-width: 769px) {
+    .mobile-header {
+      display: none !important;
+    }
+    .mobile-bottom-nav {
+      display: none !important;
+    }
+  }
 </style>
 </helmet>
 
 <sc-if value="{{ isAuthenticated }}" hint-placeholder-val="{{ false }}">
-<div style="display:flex; align-items:flex-start; min-height:100vh; font-family:Figtree, Helvetica, Arial, sans-serif;">
+<div style="display:flex; flex-direction:column; min-height:100vh; background:{{ themeBg }}; font-family:Figtree, Helvetica, Arial, sans-serif; color:{{ themeText }};">
 
-  <aside style="width:232px; flex:0 0 232px; height:100vh; position:sticky; top:0; background:#FFFFFF; border-right:1px solid #E7E7E1; padding:22px 16px; display:flex; flex-direction:column; gap:20px; box-sizing:border-box; overflow-y:auto; z-index:10;">
-    <div style="display:flex; align-items:center; gap:9px; padding:0 6px;">
-      <div style="font-size:17px; font-weight:700; letter-spacing:-0.01em;">{{ greeting }}</div>
+  <!-- Mobile Top Header (Visible on mobile only) -->
+  <header class="mobile-header" style="display:none; align-items:center; justify-content:space-between; padding:12px 16px; background:{{ themeSidebarBg }}; border-bottom:1px solid {{ themeBorder }}; position:sticky; top:0; z-index:30;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div style="font-size:17px; font-weight:700; letter-spacing:-0.02em; color:{{ themeText }};">DoneIt Planner</div>
     </div>
-
-    <button onClick="{{ openNew }}" style="align-self:flex-start; display:inline-flex; align-items:center; padding:7px 12px; border:none; border-radius:8px; background:#2F44C8; color:#FFFFFF; font-size:13px; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(31,47,150,0.35);" style-hover="background:#2637A8;">New Task</button>
-
-    <nav style="display:flex; flex-direction:column; gap:2px;">
-      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="3">
-        <button onClick="{{ n.go }}" style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 12px; border:none; border-radius:9px; background:{{ n.bg }}; color:{{ n.ink }}; font-size:14px; font-weight:{{ n.weight }}; text-align:left; cursor:pointer;" style-hover="background:#F1F1EC;">
-          <span>{{ n.label }}</span>
-          <span style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:#9A9A90;">{{ n.count }}</span>
-        </button>
-      </sc-for>
-    </nav>
-
-    <div style="margin-top:auto; display:flex; flex-direction:column; gap:6px; border-top:1px solid #EFEFE9; padding-top:14px;">
-      <div style="display:flex; align-items:center; gap:6px; padding:0 12px; font-size:11.5px; color:{{ syncColor }}; font-weight:500;">
-        <span style="width:6px; height:6px; border-radius:50%; background:{{ syncColor }};"></span>
-        <span>{{ syncStatusText }}</span>
-      </div>
-      <button type="button" onClick="{{ installApp }}" title="Download DoneIt App" style="display:flex; align-items:center; gap:8px; width:100%; padding:7px 11px; border:1px solid #E2E2DB; border-radius:8px; background:#FAFAFA; color:#4C4C44; font-size:12px; font-weight:600; cursor:pointer;" style-hover="background:#EEF1FF; color:#2F44C8; border-color:#C3CDFA;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        <span>Download App</span>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button type="button" onClick="{{ toggleDarkMode }}" title="Toggle dark mode" style="width:34px; height:34px; border-radius:9px; border:1px solid {{ themeBorder }}; background:{{ themeCardBg }}; color:{{ themeText }}; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+        <sc-if value="{{ isDarkMode }}" hint-placeholder-val="{{ false }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </sc-if>
+        <sc-if value="{{ isLightMode }}" hint-placeholder-val="{{ true }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </sc-if>
       </button>
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 12px 2px;">
-        <div style="display:flex; align-items:center; gap:9px; min-width:0; flex:1;">
-          <div style="width:28px; height:28px; flex:0 0 28px; border-radius:50%; background:#E4DAFB; color:#4A3A7A; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">{{ userInitials }}</div>
-          <div style="min-width:0; flex:1;">
-            <div style="font-size:13px; font-weight:600; color:#23231F; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ userName }}</div>
-            <div style="font-size:11px; color:#8A8A80; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ userEmail }}</div>
-          </div>
-        </div>
-        <button type="button" onClick="{{ signOut }}" title="Log out" style="border:1px solid #E2E2DB; background:#FFFFFF; color:#5C5C54; cursor:pointer; font-size:12px; font-weight:600; padding:5px 9px; border-radius:7px;" style-hover="background:#FEECEE; color:#CE2C31; border-color:#F8B4B7;">Log out</button>
-      </div>
+      <button type="button" onClick="{{ openNew }}" style="display:inline-flex; align-items:center; gap:4px; padding:7px 12px; border:none; border-radius:9px; background:#2F44C8; color:#FFFFFF; font-size:13px; font-weight:600; cursor:pointer;">
+        <span>+ Task</span>
+      </button>
     </div>
-  </aside>
+  </header>
 
-  <main style="flex:1; min-width:0; display:flex; flex-direction:column;">
+  <div style="display:flex; align-items:flex-start; min-height:100vh; width:100%;">
 
-    <sc-if value="{{ isDay }}" hint-placeholder-val="{{ true }}">
-      <div style="display:flex; flex-direction:column; min-height:0;">
-        <header style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:22px 30px 16px;">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <button onClick="{{ prevDay }}" style="width:32px; height:32px; border:1px solid #E2E2DB; border-radius:9px; background:#FFFFFF; cursor:pointer; color:#5C5C54;" style-hover="border-color:#C9C9C0;">‹</button>
-            <div>
-              <div style="font-size:22px; font-weight:700; letter-spacing:-0.02em;">{{ dayTitle }}</div>
-              <div style="font-size:13px; color:#8A8A80; margin-top:2px;">{{ daySummary }}</div>
-            </div>
-            <button onClick="{{ nextDay }}" style="width:32px; height:32px; border:1px solid #E2E2DB; border-radius:9px; background:#FFFFFF; cursor:pointer; color:#5C5C54;" style-hover="border-color:#C9C9C0;">›</button>
-          </div>
-          <button onClick="{{ goToday }}" style="padding:8px 14px; border:1px solid #D5DAF5; border-radius:9px; background:#FFFFFF; color:#2F44C8; font-size:13px; font-weight:600; cursor:pointer;" style-hover="background:#F2F4FF;">Today</button>
-        </header>
-
-        <div style="display:flex; align-items:flex-start; gap:24px; padding:4px 30px 40px; flex-wrap:wrap;">
-          <section style="flex:1 1 460px; min-width:0; background:#FFFFFF; border:1px solid #E7E7E1; border-radius:14px; padding:14px 18px 18px;">
-            <div style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.12em; color:#9A9A90; padding-bottom:10px;">SCHEDULE</div>
-            <div style="position:relative;">
-              <sc-for list="{{ hours }}" as="h" hint-placeholder-count="12">
-                <div onClick="{{ h.create }}" onDragOver="{{ h.over }}" onDrop="{{ h.drop }}" style="display:flex; align-items:flex-start; gap:12px; height:{{ h.height }}px; border-top:1px solid #EFEFE9; cursor:copy;" style-hover="background:#FAFAF7;">
-                  <span style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:#A6A69C; width:42px; flex:0 0 42px; padding-top:4px;">{{ h.label }}</span>
-                </div>
-              </sc-for>
-              <div style="position:absolute; inset:0 0 0 54px; pointer-events:none;">
-                <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="3">
-                  <div draggable="true" onDragStart="{{ b.dragStart }}" onClick="{{ b.toggle }}" style="position:absolute; left:0; right:6px; top:{{ b.top }}px; height:{{ b.height }}px; pointer-events:auto; display:flex; align-items:flex-start; gap:9px; padding:8px 11px; border-radius:9px; background:{{ b.bg }}; border-left:3px solid {{ b.bar }}; opacity:{{ b.opacity }}; cursor:grab; overflow:hidden;">
-                    <span style="font-size:12px; color:{{ b.ink }}; font-weight:700; line-height:1.3;">{{ b.mark }}</span>
-                    <span style="min-width:0;">
-                      <span style="display:block; font-size:13.5px; font-weight:600; color:{{ b.ink }}; text-decoration:{{ b.strike }}; line-height:1.3;">{{ b.title }}</span>
-                      <span style="display:block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:{{ b.ink }}; opacity:0.75; margin-top:2px;">{{ b.range }}</span>
-                    </span>
-                  </div>
-                </sc-for>
-              </div>
-            </div>
-          </section>
-
-          <section style="flex:0 1 300px; min-width:260px; display:flex; flex-direction:column; gap:10px;">
-            <div style="background:#FFFFFF; border:1px solid #E7E7E1; border-radius:14px; padding:16px 18px;">
-              <div style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.12em; color:#9A9A90; padding-bottom:4px;">UNSCHEDULED</div>
-              <div style="font-size:12px; color:#8A8A80; padding-bottom:12px;">Drag onto a time slot to schedule.</div>
-              <div style="display:flex; flex-direction:column; gap:7px;">
-                <sc-for list="{{ unscheduled }}" as="t" hint-placeholder-count="3">
-                  <div draggable="true" onDragStart="{{ t.dragStart }}" style="display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:9px; background:{{ t.bg }}; border-left:3px solid {{ t.bar }}; cursor:grab;">
-                    <button onClick="{{ t.toggle }}" style="width:15px; height:15px; flex:0 0 15px; border:1.5px solid {{ t.ink }}; border-radius:4px; background:transparent; cursor:pointer; padding:0; font-size:10px; line-height:1; color:{{ t.ink }};">{{ t.mark }}</button>
-                    <span style="font-size:13.5px; font-weight:500; color:{{ t.ink }}; text-decoration:{{ t.strike }}; flex:1; min-width:0;">{{ t.title }}</span>
-                    <button type="button" onClick="{{ t.remove }}" title="Delete" style="border:none; background:transparent; color:{{ t.ink }}; opacity:0.4; cursor:pointer; font-size:12px; padding:0 2px; line-height:1;" style-hover="opacity:1;">✕</button>
-                  </div>
-                </sc-for>
-                <sc-if value="{{ noUnscheduled }}" hint-placeholder-val="{{ false }}">
-                  <div style="font-size:13px; color:#A6A69C; padding:4px 0 2px;">Nothing waiting. Day is fully planned.</div>
-                </sc-if>
-              </div>
-            </div>
-
-            <div style="background:#FFFFFF; border:1px solid #E7E7E1; border-radius:14px; padding:16px 18px;">
-              <div style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.12em; color:#9A9A90; padding-bottom:10px;">NEXT UP</div>
-              <div style="display:flex; flex-direction:column; gap:12px;">
-                <sc-for list="{{ lookahead }}" as="d" hint-placeholder-count="2">
-                  <div>
-                    <div style="font-size:12.5px; font-weight:600; color:#4C4C44; padding-bottom:6px;">{{ d.label }}</div>
-                    <div style="display:flex; flex-direction:column; gap:5px;">
-                      <sc-for list="{{ d.items }}" as="i" hint-placeholder-count="2">
-                        <div style="display:flex; align-items:center; gap:9px;">
-                          <span style="width:7px; height:7px; border-radius:50%; background:{{ i.bar }};"></span>
-                          <span style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:#9A9A90; width:40px;">{{ i.time }}</span>
-                          <span style="font-size:13px; color:#3C3C36;">{{ i.title }}</span>
-                        </div>
-                      </sc-for>
-                      <div style="font-size:11.5px; color:#A6A69C;">{{ d.extra }}</div>
-                    </div>
-                  </div>
-                </sc-for>
-              </div>
-            </div>
-          </section>
-        </div>
+    <!-- Desktop Sidebar -->
+    <aside class="desktop-sidebar" style="width:240px; flex:0 0 240px; height:100vh; position:sticky; top:0; background:{{ themeSidebarBg }}; border-right:1px solid {{ themeBorder }}; padding:20px 16px; display:flex; flex-direction:column; gap:18px; box-sizing:border-box; overflow-y:auto; z-index:10;">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:0 4px;">
+        <div style="font-size:17px; font-weight:700; letter-spacing:-0.01em; color:{{ themeText }};">{{ greeting }}</div>
       </div>
-    </sc-if>
 
-    <sc-if value="{{ isWeek }}" hint-placeholder-val="{{ false }}">
-      <div>
-        <header style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; padding:22px 30px 18px;">
-          <div>
-            <div style="font-size:22px; font-weight:700; letter-spacing:-0.02em;">{{ weekTitle }}</div>
-            <div style="font-size:13px; color:#8A8A80; margin-top:2px;">Drag a task onto a day to assign it.</div>
+      <button onClick="{{ openNew }}" style="align-self:stretch; display:flex; align-items:center; justify-content:center; gap:6px; padding:8px 14px; border:none; border-radius:9px; background:#2F44C8; color:#FFFFFF; font-size:13.5px; font-weight:600; cursor:pointer; box-shadow:0 1px 3px rgba(31,47,150,0.35);" style-hover="background:#2637A8;">
+        <span>+ New Task</span>
+      </button>
+
+      <nav style="display:flex; flex-direction:column; gap:3px;">
+        <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="3">
+          <button onClick="{{ n.go }}" style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 12px; border:none; border-radius:9px; background:{{ n.bg }}; color:{{ n.ink }}; font-size:14px; font-weight:{{ n.weight }}; text-align:left; cursor:pointer;" style-hover="background:{{ themeHoverBg }};">
+            <span>{{ n.label }}</span>
+            <span style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:{{ themeTextMuted }};">{{ n.count }}</span>
+          </button>
+        </sc-for>
+      </nav>
+
+      <!-- Settings Section at Bottom -->
+      <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px; border-top:1px solid {{ themeBorderLight }}; padding-top:16px;">
+        <div style="font-family:'IBM Plex Mono', monospace; font-size:10px; font-weight:600; letter-spacing:0.12em; color:{{ themeTextMuted }}; padding:0 4px;">SETTINGS</div>
+
+        <!-- User Profile Card -->
+        <div style="display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:10px; background:{{ themeCardBg }}; border:1px solid {{ themeBorder }};">
+          <div style="width:32px; height:32px; flex:0 0 32px; border-radius:50%; background:{{ themeAvatarBg }}; color:{{ themeAvatarInk }}; font-size:11.5px; font-weight:700; display:flex; align-items:center; justify-content:center;">{{ userInitials }}</div>
+          <div style="min-width:0; flex:1;">
+            <div style="font-size:13px; font-weight:600; color:{{ themeText }}; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ userName }}</div>
+            <div style="font-size:11px; color:{{ themeTextMuted }}; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ userEmail }}</div>
           </div>
-          <button onClick="{{ openNew }}" style="padding:9px 14px; border:none; border-radius:9px; background:#2F44C8; color:#FFFFFF; font-size:13px; font-weight:600; cursor:pointer;" style-hover="background:#2637A8;">+ New Task</button>
-        </header>
-        <div style="display:flex; gap:10px; padding:0 30px 24px; align-items:stretch; overflow-x:auto;">
-          <div style="flex:0 0 218px; background:#FFFFFF; border:1px dashed #D8D8D0; border-radius:13px; padding:14px;" onDragOver="{{ overDay }}" onDrop="{{ dropUnassign }}">
-            <div style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.1em; color:#9A9A90;">UNASSIGNED</div>
-            <div style="font-size:12px; color:#A6A69C; padding:4px 0 12px;">{{ unassignedCount }}</div>
-            <div style="display:flex; flex-direction:column; gap:7px;">
-              <sc-for list="{{ unassigned }}" as="t" hint-placeholder-count="4">
-                <div draggable="true" onDragStart="{{ t.dragStart }}" style="display:flex; align-items:center; justify-content:space-between; gap:6px; padding:9px 11px; border-radius:9px; background:{{ t.bg }}; border-left:3px solid {{ t.bar }}; font-size:13px; font-weight:500; color:{{ t.ink }}; cursor:grab;">
-                  <span style="flex:1; min-width:0;">{{ t.title }}</span>
-                  <button type="button" onClick="{{ t.remove }}" title="Delete" style="border:none; background:transparent; color:{{ t.ink }}; opacity:0.4; cursor:pointer; font-size:12px; padding:0 2px; line-height:1;" style-hover="opacity:1;">✕</button>
-                </div>
-              </sc-for>
+        </div>
+
+        <!-- Dark Mode Toggle Switch -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 11px; border-radius:10px; background:{{ themeCardBg }}; border:1px solid {{ themeBorder }};">
+          <div style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:{{ themeText }};">
+            <sc-if value="{{ isDarkMode }}" hint-placeholder-val="{{ false }}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </sc-if>
+            <sc-if value="{{ isLightMode }}" hint-placeholder-val="{{ true }}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </sc-if>
+            <span>Dark Mode</span>
+          </div>
+          <button type="button" onClick="{{ toggleDarkMode }}" aria-label="Toggle dark mode" style="position:relative; width:42px; height:24px; border-radius:12px; border:none; background:{{ darkModeToggleBg }}; cursor:pointer; padding:2px; transition:background 0.2s;">
+            <span style="display:block; width:20px; height:20px; border-radius:50%; background:#FFFFFF; transform:{{ darkModeKnobTranslate }}; transition:transform 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.25);"></span>
+          </button>
+        </div>
+
+        <!-- Download App button -->
+        <button type="button" onClick="{{ installApp }}" title="Download DoneIt App" style="display:flex; align-items:center; gap:8px; width:100%; padding:8px 11px; border:1px solid {{ themeBorder }}; border-radius:9px; background:{{ themeCardBg }}; color:{{ themeTextSecondary }}; font-size:12px; font-weight:600; cursor:pointer;" style-hover="background:{{ themeHoverBg }}; color:#2F44C8;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Download App</span>
+        </button>
+
+        <!-- Log out button -->
+        <button type="button" onClick="{{ signOut }}" title="Log out" style="display:flex; align-items:center; justify-content:center; gap:6px; width:100%; border:1px solid {{ themeLogoutBorder }}; background:{{ themeLogoutBg }}; color:{{ themeLogoutInk }}; cursor:pointer; font-size:12.5px; font-weight:600; padding:7px 11px; border-radius:9px;" style-hover="background:{{ themeLogoutHoverBg }};">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Log out</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main View Content -->
+    <main class="app-main-content" style="flex:1; min-width:0; display:flex; flex-direction:column;">
+
+      <!-- DAY VIEW -->
+      <sc-if value="{{ isDay }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex; flex-direction:column; min-height:0;">
+          <header class="day-header-wrap" style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:22px 30px 16px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <button onClick="{{ prevDay }}" style="width:32px; height:32px; border:1px solid {{ themeBorder }}; border-radius:9px; background:{{ themeCardBg }}; cursor:pointer; color:{{ themeText }};" style-hover="border-color:{{ themeTextMuted }};">‹</button>
+              <div>
+                <div style="font-size:22px; font-weight:700; letter-spacing:-0.02em; color:{{ themeText }};">{{ dayTitle }}</div>
+                <div style="font-size:13px; color:{{ themeTextMuted }}; margin-top:2px;">{{ daySummary }}</div>
+              </div>
+              <button onClick="{{ nextDay }}" style="width:32px; height:32px; border:1px solid {{ themeBorder }}; border-radius:9px; background:{{ themeCardBg }}; cursor:pointer; color:{{ themeText }};" style-hover="border-color:{{ themeTextMuted }};">›</button>
             </div>
-          </div>
-          <sc-for list="{{ weekDays }}" as="d" hint-placeholder-count="7">
-            <div onDragOver="{{ d.over }}" onDrop="{{ d.drop }}" style="flex:1 1 150px; min-width:150px; background:{{ d.bg }}; border:1px solid {{ d.border }}; border-radius:13px; padding:14px 12px; display:flex; flex-direction:column;">
-              <button onClick="{{ d.open }}" style="display:flex; align-items:baseline; gap:7px; border:none; background:transparent; padding:0; cursor:pointer; text-align:left;">
-                <span style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.1em; color:#8A8A80;">{{ d.dow }}</span>
-                <span style="font-size:15px; font-weight:700; color:{{ d.ink }};">{{ d.num }}</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button onClick="{{ toggleAllHours }}" title="Toggle 24-hour schedule range" style="padding:7px 12px; border:1px solid {{ themeBorder }}; border-radius:9px; background:{{ themeCardBg }}; color:{{ themeTextSecondary }}; font-size:12px; font-weight:600; cursor:pointer;" style-hover="background:{{ themeHoverBg }};">
+                <span>{{ hoursViewLabel }}</span>
               </button>
-              <div style="font-size:11.5px; color:#A6A69C; padding:5px 0 12px;">{{ d.count }}</div>
-              <div style="display:flex; flex-direction:column; gap:6px;">
-                <sc-for list="{{ d.items }}" as="t" hint-placeholder-count="3">
-                  <div draggable="true" onDragStart="{{ t.dragStart }}" style="padding:8px 10px; border-radius:8px; background:{{ t.bg }}; border-left:3px solid {{ t.bar }}; cursor:grab; opacity:{{ t.opacity }};">
-                    <div style="font-size:12.5px; font-weight:600; color:{{ t.ink }}; text-decoration:{{ t.strike }}; line-height:1.35;">{{ t.title }}</div>
-                    <div style="font-family:'IBM Plex Mono', monospace; font-size:10px; color:{{ t.ink }}; opacity:0.75; margin-top:2px;">{{ t.range }}</div>
-                  </div>
-                </sc-for>
-              </div>
+              <button onClick="{{ goToday }}" style="padding:8px 14px; border:1px solid #D5DAF5; border-radius:9px; background:{{ themeCardBg }}; color:#2F44C8; font-size:13px; font-weight:600; cursor:pointer;" style-hover="background:{{ themeHoverBg }};">Today</button>
             </div>
-          </sc-for>
-        </div>
-      </div>
-    </sc-if>
+          </header>
 
-    <sc-if value="{{ isTasks }}" hint-placeholder-val="{{ false }}">
-      <div style="max-width:760px; padding:22px 30px 48px;">
-        <header style="padding-bottom:20px;">
-          <div style="font-size:22px; font-weight:700; letter-spacing:-0.02em;">Tasks</div>
-          <div style="font-size:13px; color:#8A8A80; margin-top:2px;">{{ tasksSummary }}</div>
-        </header>
-        <form onSubmit="{{ quickAdd }}" style="display:flex; gap:8px; padding-bottom:22px;">
-          <input value="{{ draftTitle }}" onChange="{{ setDraftTitle }}" placeholder="What do you need to do?" style="flex:1; min-width:0; padding:11px 14px; border:1px solid #E2E2DB; border-radius:10px; background:#FFFFFF; font-size:14px;" />
-          <button type="submit" style="padding:11px 18px; border:none; border-radius:10px; background:#2F44C8; color:#FFFFFF; font-size:14px; font-weight:600; cursor:pointer;" style-hover="background:#2637A8;">Add</button>
-        </form>
-        <div style="display:flex; flex-direction:column; gap:26px;">
-          <sc-for list="{{ taskGroups }}" as="g" hint-placeholder-count="4">
-            <section>
-              <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #E7E7E1; padding-bottom:7px; margin-bottom:10px;">
-                <span style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.12em; color:#9A9A90;">{{ g.label }}</span>
-                <span style="font-family:'IBM Plex Mono', monospace; font-size:10px; color:#BDBDB4;">{{ g.count }}</span>
+          <div class="day-main-layout" style="display:flex; align-items:flex-start; gap:24px; padding:4px 30px 40px; flex-wrap:wrap;">
+            
+            <!-- Schedule Section -->
+            <section style="flex:1 1 460px; min-width:0; background:{{ themeCardBg }}; border:1px solid {{ themeBorder }}; border-radius:14px; padding:14px 18px 18px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom:10px;">
+                <span style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.12em; color:{{ themeTextMuted }};">SCHEDULE</span>
+                <span style="font-family:'IBM Plex Mono', monospace; font-size:10px; color:{{ themeTextMuted }};">Drag edges to extend hours</span>
               </div>
-              <div style="display:flex; flex-direction:column; gap:4px;">
-                <sc-for list="{{ g.items }}" as="t" hint-placeholder-count="3">
-                  <div style="display:flex; align-items:center; gap:12px; padding:9px 12px; border-radius:10px; background:#FFFFFF; border:1px solid #EDEDE7;">
-                    <button onClick="{{ t.toggle }}" style="width:17px; height:17px; flex:0 0 17px; border:1.5px solid {{ t.checkBorder }}; border-radius:5px; background:{{ t.checkBg }}; color:#FFFFFF; font-size:10px; line-height:1; padding:0; cursor:pointer;">{{ t.mark }}</button>
-                    <span style="width:8px; height:8px; flex:0 0 8px; border-radius:50%; background:{{ t.bar }};"></span>
-                    <span style="flex:1; min-width:0; font-size:14px; color:{{ t.titleInk }}; text-decoration:{{ t.strike }};">{{ t.title }}</span>
-                    <span style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:#A6A69C;">{{ t.range }}</span>
-                    <select value="{{ t.day }}" onChange="{{ t.assign }}" style="padding:6px 8px; border:1px solid #E2E2DB; border-radius:8px; background:#FBFBF9; font-size:12px; color:#4C4C44; cursor:pointer;">
-                      <sc-for list="{{ dayOptions }}" as="o" hint-placeholder-count="8">
-                        <option value="{{ o.value }}">{{ o.label }}</option>
-                      </sc-for>
-                    </select>
-                    <button type="button" onClick="{{ t.remove }}" title="Delete task" style="border:none; background:transparent; color:#B4B4AA; cursor:pointer; font-size:14px; padding:2px 6px; border-radius:4px; line-height:1;" style-hover="color:#E5484D; background:#FEECEE;">✕</button>
+
+              <!-- Earlier Hours Expander (if not already starting at 01) -->
+              <sc-if value="{{ canShowEarlierHours }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ revealEarlierHours }}" style="width:100%; padding:6px 0; margin-bottom:8px; border:1px dashed {{ themeBorder }}; border-radius:8px; background:transparent; color:{{ themeTextMuted }}; font-size:11.5px; font-family:'IBM Plex Mono', monospace; cursor:pointer;" style-hover="color:{{ themeText }}; border-color:{{ themeTextMuted }};">
+                  <span>▲ Show earlier hours (01:00 – {{ scheduleStartLabel }})</span>
+                </button>
+              </sc-if>
+
+              <div style="position:relative;">
+                <sc-for list="{{ hours }}" as="h" hint-placeholder-count="12">
+                  <div onClick="{{ h.create }}" onDragOver="{{ h.over }}" onDrop="{{ h.drop }}" style="display:flex; align-items:flex-start; gap:12px; height:{{ h.height }}px; border-top:1px solid {{ themeSlotBorder }}; cursor:copy;" style-hover="background:{{ themeHoverBg }};">
+                    <span style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:{{ themeTextMuted }}; width:42px; flex:0 0 42px; padding-top:4px;">{{ h.label }}</span>
                   </div>
                 </sc-for>
+
+                <!-- Scheduled Blocks with Edge Resize Handles -->
+                <div style="position:absolute; inset:0 0 0 54px; pointer-events:none;">
+                  <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="3">
+                    <div draggable="true" onDragStart="{{ b.dragStart }}" onClick="{{ b.toggle }}" style="position:absolute; left:0; right:6px; top:{{ b.top }}px; height:{{ b.height }}px; pointer-events:auto; display:flex; flex-direction:column; justify-content:space-between; padding:7px 11px 8px; border-radius:9px; background:{{ b.bg }}; border-left:3.5px solid {{ b.bar }}; opacity:{{ b.opacity }}; cursor:grab; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+                      
+                      <!-- Top Edge Drag/Resize Handle -->
+                      <div onMouseDown="{{ b.resizeTopStart }}" onTouchStart="{{ b.resizeTopStart }}" title="Drag to change start time" style="position:absolute; top:0; left:0; right:0; height:8px; cursor:ns-resize; z-index:10; display:flex; align-items:center; justify-content:center; touch-action:none;">
+                        <span style="width:26px; height:2.5px; border-radius:2px; background:{{ b.bar }}; opacity:0.6;"></span>
+                      </div>
+
+                      <div style="display:flex; align-items:flex-start; gap:8px; min-width:0;">
+                        <span style="font-size:12px; color:{{ b.ink }}; font-weight:700; line-height:1.3;">{{ b.mark }}</span>
+                        <div style="min-width:0; flex:1;">
+                          <div style="font-size:13.5px; font-weight:600; color:{{ b.ink }}; text-decoration:{{ b.strike }}; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ b.title }}</div>
+                          <div style="font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:{{ b.ink }}; opacity:0.8; margin-top:2px;">{{ b.range }}</div>
+                        </div>
+                      </div>
+
+                      <!-- Bottom Edge Drag/Resize Handle -->
+                      <div onMouseDown="{{ b.resizeBottomStart }}" onTouchStart="{{ b.resizeBottomStart }}" title="Drag edge down to extend hours" style="position:absolute; bottom:0; left:0; right:0; height:9px; cursor:ns-resize; z-index:10; display:flex; align-items:center; justify-content:center; touch-action:none;">
+                        <span style="width:26px; height:2.5px; border-radius:2px; background:{{ b.bar }}; opacity:0.6;"></span>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <!-- Later Hours Expander (if not already ending at 24) -->
+              <sc-if value="{{ canShowLaterHours }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ revealLaterHours }}" style="width:100%; padding:6px 0; margin-top:8px; border:1px dashed {{ themeBorder }}; border-radius:8px; background:transparent; color:{{ themeTextMuted }}; font-size:11.5px; font-family:'IBM Plex Mono', monospace; cursor:pointer;" style-hover="color:{{ themeText }}; border-color:{{ themeTextMuted }};">
+                  <span>▼ Show later hours ({{ scheduleEndLabel }} – 24:00)</span>
+                </button>
+              </sc-if>
+            </section>
+
+            <!-- Unscheduled & Lookahead Side Section -->
+            <section class="day-side-section" style="flex:0 1 300px; min-width:260px; display:flex; flex-direction:column; gap:12px;">
+              <div style="background:{{ themeCardBg }}; border:1px solid {{ themeBorder }}; border-radius:14px; padding:16px 18px;">
+                <div style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.12em; color:{{ themeTextMuted }}; padding-bottom:4px;">UNSCHEDULED</div>
+                <div style="font-size:12px; color:{{ themeTextMuted }}; padding-bottom:12px;">Drag onto a time slot to schedule.</div>
+                <div style="display:flex; flex-direction:column; gap:7px;">
+                  <sc-for list="{{ unscheduled }}" as="t" hint-placeholder-count="3">
+                    <div draggable="true" onDragStart="{{ t.dragStart }}" style="display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:9px; background:{{ t.bg }}; border-left:3px solid {{ t.bar }}; cursor:grab;">
+                      <button onClick="{{ t.toggle }}" style="width:15px; height:15px; flex:0 0 15px; border:1.5px solid {{ t.ink }}; border-radius:4px; background:transparent; cursor:pointer; padding:0; font-size:10px; line-height:1; color:{{ t.ink }};">{{ t.mark }}</button>
+                      <span style="font-size:13.5px; font-weight:500; color:{{ t.ink }}; text-decoration:{{ t.strike }}; flex:1; min-width:0;">{{ t.title }}</span>
+                      <button type="button" onClick="{{ t.remove }}" title="Delete" style="border:none; background:transparent; color:{{ t.ink }}; opacity:0.5; cursor:pointer; font-size:12px; padding:0 2px; line-height:1;" style-hover="opacity:1;">✕</button>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ noUnscheduled }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:13px; color:{{ themeTextMuted }}; padding:4px 0 2px;">Nothing waiting. Day is fully planned.</div>
+                  </sc-if>
+                </div>
+              </div>
+
+              <div style="background:{{ themeCardBg }}; border:1px solid {{ themeBorder }}; border-radius:14px; padding:16px 18px;">
+                <div style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.12em; color:{{ themeTextMuted }}; padding-bottom:10px;">NEXT UP</div>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                  <sc-for list="{{ lookahead }}" as="d" hint-placeholder-count="2">
+                    <div>
+                      <div style="font-size:12.5px; font-weight:600; color:{{ themeText }}; padding-bottom:6px;">{{ d.label }}</div>
+                      <div style="display:flex; flex-direction:column; gap:5px;">
+                        <sc-for list="{{ d.items }}" as="i" hint-placeholder-count="2">
+                          <div style="display:flex; align-items:center; gap:9px;">
+                            <span style="width:7px; height:7px; border-radius:50%; background:{{ i.bar }};"></span>
+                            <span style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:{{ themeTextMuted }}; width:40px;">{{ i.time }}</span>
+                            <span style="font-size:13px; color:{{ themeTextSecondary }};">{{ i.title }}</span>
+                          </div>
+                        </sc-for>
+                        <div style="font-size:11.5px; color:{{ themeTextMuted }};">{{ d.extra }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
               </div>
             </section>
-          </sc-for>
+          </div>
         </div>
-      </div>
-    </sc-if>
+      </sc-if>
 
-  </main>
-
-  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
-    <div onClick="{{ closeModal }}" style="position:fixed; inset:0; background:rgba(28,28,24,0.34); display:flex; align-items:center; justify-content:center; padding:24px; z-index:40;">
-      <form onSubmit="{{ submitNew }}" onClick="{{ stop }}" style="width:100%; max-width:392px; background:#FFFFFF; border-radius:16px; padding:24px; box-shadow:0 18px 44px rgba(28,28,24,0.22); display:flex; flex-direction:column; gap:18px;">
+      <!-- WEEK VIEW -->
+      <sc-if value="{{ isWeek }}" hint-placeholder-val="{{ false }}">
         <div>
-          <div style="font-size:17px; font-weight:700; letter-spacing:-0.01em;">New task</div>
-          <div style="font-size:12.5px; color:#8A8A80; margin-top:2px;">Day and time are optional.</div>
-        </div>
-        <label style="display:flex; flex-direction:column; gap:6px;">
-          <span style="font-size:12px; font-weight:600; color:#5C5C54;">What do you need to do?</span>
-          <input value="{{ draftTitle }}" onChange="{{ setDraftTitle }}" placeholder="Take a Run" style="padding:11px 13px; border:1px solid #E2E2DB; border-radius:10px; font-size:14px;" />
-        </label>
-        <div style="display:flex; gap:10px;">
-          <label style="flex:1; min-width:0; display:flex; flex-direction:column; gap:6px;">
-            <span style="font-size:12px; font-weight:600; color:#5C5C54;">Day</span>
-            <select value="{{ draftDay }}" onChange="{{ setDraftDay }}" style="width:100%; min-width:0; padding:10px 11px; border:1px solid #E2E2DB; border-radius:10px; font-size:13px; background:#FBFBF9;">
-              <sc-for list="{{ dayOptions }}" as="o" hint-placeholder-count="8">
-                <option value="{{ o.value }}">{{ o.label }}</option>
-              </sc-for>
-            </select>
-          </label>
-          <label style="flex:0 0 88px; min-width:0; display:flex; flex-direction:column; gap:6px;">
-            <span style="font-size:12px; font-weight:600; color:#5C5C54;">Start</span>
-            <input value="{{ draftStart }}" onChange="{{ setDraftStart }}" placeholder="--:--" size="5" style="width:100%; min-width:0; padding:10px 11px; border:1px solid #E2E2DB; border-radius:10px; font-size:13px; font-family:'IBM Plex Mono', monospace;" />
-          </label>
-          <label style="flex:0 0 88px; min-width:0; display:flex; flex-direction:column; gap:6px;">
-            <span style="font-size:12px; font-weight:600; color:#5C5C54;">End</span>
-            <input value="{{ draftEnd }}" onChange="{{ setDraftEnd }}" placeholder="--:--" size="5" style="width:100%; min-width:0; padding:10px 11px; border:1px solid #E2E2DB; border-radius:10px; font-size:13px; font-family:'IBM Plex Mono', monospace;" />
-          </label>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <span style="font-size:12px; font-weight:600; color:#5C5C54;">Color</span>
-          <div style="display:flex; gap:8px;">
-            <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="6">
-              <button type="button" onClick="{{ s.pick }}" style="width:28px; height:28px; border-radius:50%; background:{{ s.bg }}; border:2px solid {{ s.ring }}; cursor:pointer; padding:0;"></button>
+          <header class="week-header-wrap" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; padding:22px 30px 18px;">
+            <div>
+              <div style="font-size:22px; font-weight:700; letter-spacing:-0.02em; color:{{ themeText }};">{{ weekTitle }}</div>
+              <div style="font-size:13px; color:{{ themeTextMuted }}; margin-top:2px;">Showing from today onwards. Scroll left to review previous days.</div>
+            </div>
+            <button onClick="{{ openNew }}" style="padding:9px 14px; border:none; border-radius:9px; background:#2F44C8; color:#FFFFFF; font-size:13px; font-weight:600; cursor:pointer;" style-hover="background:#2637A8;">+ New Task</button>
+          </header>
+
+          <div id="week-scroll-container" class="week-scroll-container" style="display:flex; gap:12px; padding:0 30px 24px; align-items:stretch; overflow-x:auto; -webkit-overflow-scrolling:touch;">
+            
+            <!-- Unassigned column -->
+            <div style="flex:0 0 218px; background:{{ themeCardBg }}; border:1px dashed {{ themeBorder }}; border-radius:13px; padding:14px;" onDragOver="{{ overDay }}" onDrop="{{ dropUnassign }}">
+              <div style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.1em; color:{{ themeTextMuted }};">UNASSIGNED</div>
+              <div style="font-size:12px; color:{{ themeTextMuted }}; padding:4px 0 12px;">{{ unassignedCount }}</div>
+              <div style="display:flex; flex-direction:column; gap:7px;">
+                <sc-for list="{{ unassigned }}" as="t" hint-placeholder-count="4">
+                  <div draggable="true" onDragStart="{{ t.dragStart }}" style="display:flex; align-items:center; justify-content:space-between; gap:6px; padding:9px 11px; border-radius:9px; background:{{ t.bg }}; border-left:3px solid {{ t.bar }}; font-size:13px; font-weight:500; color:{{ t.ink }}; cursor:grab;">
+                    <span style="flex:1; min-width:0;">{{ t.title }}</span>
+                    <button type="button" onClick="{{ t.remove }}" title="Delete" style="border:none; background:transparent; color:{{ t.ink }}; opacity:0.5; cursor:pointer; font-size:12px; padding:0 2px; line-height:1;" style-hover="opacity:1;">✕</button>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- Week Day columns -->
+            <sc-for list="{{ weekDays }}" as="d" hint-placeholder-count="7">
+              <div id="{{ d.colId }}" onDragOver="{{ d.over }}" onDrop="{{ d.drop }}" style="flex:1 1 160px; min-width:160px; background:{{ d.bg }}; border:1px solid {{ d.border }}; border-radius:13px; padding:14px 12px; display:flex; flex-direction:column; opacity:{{ d.colOpacity }};">
+                <button onClick="{{ d.open }}" style="display:flex; align-items:baseline; justify-content:space-between; border:none; background:transparent; padding:0; cursor:pointer; text-align:left; width:100%;">
+                  <div style="display:flex; align-items:baseline; gap:7px;">
+                    <span style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.1em; color:{{ themeTextMuted }};">{{ d.dow }}</span>
+                    <span style="font-size:15px; font-weight:700; color:{{ d.ink }};">{{ d.num }}</span>
+                  </div>
+                  <span style="font-family:'IBM Plex Mono', monospace; font-size:9.5px; font-weight:600; color:{{ d.badgeColor }};">{{ d.badge }}</span>
+                </button>
+                <div style="font-size:11.5px; color:{{ themeTextMuted }}; padding:5px 0 12px;">{{ d.count }}</div>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                  <sc-for list="{{ d.items }}" as="t" hint-placeholder-count="3">
+                    <div draggable="true" onDragStart="{{ t.dragStart }}" style="padding:8px 10px; border-radius:8px; background:{{ t.bg }}; border-left:3px solid {{ t.bar }}; cursor:grab; opacity:{{ t.opacity }};">
+                      <div style="font-size:12.5px; font-weight:600; color:{{ t.ink }}; text-decoration:{{ t.strike }}; line-height:1.35;">{{ t.title }}</div>
+                      <div style="font-family:'IBM Plex Mono', monospace; font-size:10px; color:{{ t.ink }}; opacity:0.8; margin-top:2px;">{{ t.range }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
             </sc-for>
           </div>
         </div>
-        <div style="display:flex; gap:9px; justify-content:flex-end; padding-top:2px;">
-          <button type="button" onClick="{{ closeModal }}" style="padding:10px 15px; border:1px solid #E2E2DB; border-radius:10px; background:#FFFFFF; font-size:13.5px; font-weight:600; color:#5C5C54; cursor:pointer;" style-hover="background:#F7F7F4;">Cancel</button>
-          <button type="submit" style="padding:10px 18px; border:none; border-radius:10px; background:#2F44C8; color:#FFFFFF; font-size:13.5px; font-weight:600; cursor:pointer;" style-hover="background:#2637A8;">Add Task</button>
+      </sc-if>
+
+      <!-- TASKS VIEW -->
+      <sc-if value="{{ isTasks }}" hint-placeholder-val="{{ false }}">
+        <div class="tasks-container" style="max-width:760px; padding:22px 30px 48px;">
+          <header style="padding-bottom:20px;">
+            <div style="font-size:22px; font-weight:700; letter-spacing:-0.02em; color:{{ themeText }};">Tasks</div>
+            <div style="font-size:13px; color:{{ themeTextMuted }}; margin-top:2px;">{{ tasksSummary }}</div>
+          </header>
+          <form onSubmit="{{ quickAdd }}" style="display:flex; gap:8px; padding-bottom:22px;">
+            <input value="{{ draftTitle }}" onChange="{{ setDraftTitle }}" placeholder="What do you need to do?" style="flex:1; min-width:0; padding:11px 14px; border:1px solid {{ themeInputBorder }}; border-radius:10px; background:{{ themeInputBg }}; color:{{ themeText }}; font-size:14px;" />
+            <button type="submit" style="padding:11px 18px; border:none; border-radius:10px; background:#2F44C8; color:#FFFFFF; font-size:14px; font-weight:600; cursor:pointer;" style-hover="background:#2637A8;">Add</button>
+          </form>
+          <div style="display:flex; flex-direction:column; gap:26px;">
+            <sc-for list="{{ taskGroups }}" as="g" hint-placeholder-count="4">
+              <section>
+                <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid {{ themeBorderLight }}; padding-bottom:7px; margin-bottom:10px;">
+                  <span style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.12em; color:{{ themeTextMuted }};">{{ g.label }}</span>
+                  <span style="font-family:'IBM Plex Mono', monospace; font-size:10px; color:{{ themeTextMuted }};">{{ g.count }}</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                  <sc-for list="{{ g.items }}" as="t" hint-placeholder-count="3">
+                    <div style="display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; background:{{ themeCardBg }}; border:1px solid {{ themeBorder }}; flex-wrap:wrap;">
+                      <button onClick="{{ t.toggle }}" style="width:17px; height:17px; flex:0 0 17px; border:1.5px solid {{ t.checkBorder }}; border-radius:5px; background:{{ t.checkBg }}; color:#FFFFFF; font-size:10px; line-height:1; padding:0; cursor:pointer;">{{ t.mark }}</button>
+                      <span style="width:8px; height:8px; flex:0 0 8px; border-radius:50%; background:{{ t.bar }};"></span>
+                      <span style="flex:1; min-width:140px; font-size:14px; color:{{ t.titleInk }}; text-decoration:{{ t.strike }};">{{ t.title }}</span>
+                      <span style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:{{ themeTextMuted }};">{{ t.range }}</span>
+                      <select value="{{ t.day }}" onChange="{{ t.assign }}" style="padding:6px 8px; border:1px solid {{ themeInputBorder }}; border-radius:8px; background:{{ themeInputBg }}; font-size:12px; color:{{ themeText }}; cursor:pointer;">
+                        <sc-for list="{{ t.options }}" as="o" hint-placeholder-count="8">
+                          <option value="{{ o.value }}">{{ o.label }}</option>
+                        </sc-for>
+                      </select>
+                      <button type="button" onClick="{{ t.remove }}" title="Delete task" style="border:none; background:transparent; color:{{ themeTextMuted }}; cursor:pointer; font-size:14px; padding:2px 6px; border-radius:4px; line-height:1;" style-hover="color:#E5484D;">✕</button>
+                    </div>
+                  </sc-for>
+                </div>
+              </section>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Navigation Bar (Visible on mobile only) -->
+  <nav class="mobile-bottom-nav" style="display:none; position:fixed; bottom:0; left:0; right:0; height:64px; background:{{ themeSidebarBg }}; border-top:1px solid {{ themeBorder }}; z-index:30; align-items:center; justify-content:space-around; padding:0 8px; box-sizing:border-box;">
+    <button type="button" onClick="{{ goDayView }}" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; background:none; border:none; padding:6px 12px; color:{{ mobileDayColor }}; cursor:pointer;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      <span style="font-size:10.5px; font-weight:600;">Today</span>
+    </button>
+    <button type="button" onClick="{{ goWeekView }}" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; background:none; border:none; padding:6px 12px; color:{{ mobileWeekColor }}; cursor:pointer;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line><line x1="9" y1="4" x2="9" y2="22"></line><line x1="15" y1="4" x2="15" y2="22"></line></svg>
+      <span style="font-size:10.5px; font-weight:600;">Week</span>
+    </button>
+    <button type="button" onClick="{{ goTasksView }}" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; background:none; border:none; padding:6px 12px; color:{{ mobileTasksColor }}; cursor:pointer;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+      <span style="font-size:10.5px; font-weight:600;">Tasks</span>
+    </button>
+    <button type="button" onClick="{{ openMobileSettings }}" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; background:none; border:none; padding:6px 12px; color:{{ themeTextSecondary }}; cursor:pointer;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      <span style="font-size:10.5px; font-weight:600;">Settings</span>
+    </button>
+  </nav>
+
+  <!-- NEW TASK MODAL -->
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeModal }}" style="position:fixed; inset:0; background:rgba(18,18,22,0.55); backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; padding:16px; z-index:50;">
+      <form class="modal-card" onSubmit="{{ submitNew }}" onClick="{{ stop }}" style="width:100%; max-width:410px; background:{{ themeCardBg }}; border:1px solid {{ themeBorder }}; border-radius:18px; padding:24px; box-shadow:0 20px 50px rgba(0,0,0,0.3); display:flex; flex-direction:column; gap:16px;">
+        <div>
+          <div style="font-size:18px; font-weight:700; letter-spacing:-0.01em; color:{{ themeText }};">New Task</div>
+          <div style="font-size:12.5px; color:{{ themeTextMuted }}; margin-top:2px;">Day and time are optional. Type any hour & minute.</div>
+        </div>
+
+        <label style="display:flex; flex-direction:column; gap:6px;">
+          <span style="font-size:12px; font-weight:600; color:{{ themeTextSecondary }};">What do you need to do?</span>
+          <input value="{{ draftTitle }}" onChange="{{ setDraftTitle }}" placeholder="e.g. Design review session" required style="padding:11px 13px; border:1px solid {{ themeInputBorder }}; border-radius:10px; background:{{ themeInputBg }}; color:{{ themeText }}; font-size:14px;" />
+        </label>
+
+        <!-- Forthcoming Days Dropdown -->
+        <label style="display:flex; flex-direction:column; gap:6px;">
+          <span style="font-size:12px; font-weight:600; color:{{ themeTextSecondary }};">Day</span>
+          <select value="{{ draftDay }}" onChange="{{ setDraftDay }}" style="width:100%; padding:10px 11px; border:1px solid {{ themeInputBorder }}; border-radius:10px; font-size:13px; background:{{ themeInputBg }}; color:{{ themeText }}; cursor:pointer;">
+            <sc-for list="{{ dayOptions }}" as="o" hint-placeholder-count="8">
+              <option value="{{ o.value }}">{{ o.label }}</option>
+            </sc-for>
+          </select>
+        </label>
+
+        <!-- Smart Time Inputs with Auto-Advancing Cursor -->
+        <div style="display:flex; gap:14px; flex-wrap:wrap;">
+          
+          <!-- Start Time Group -->
+          <div style="flex:1; min-width:140px; display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:12px; font-weight:600; color:{{ themeTextSecondary }};">Start Time</span>
+            <div class="time-input-box" style="display:inline-flex; align-items:center; justify-content:center; border:1px solid {{ themeInputBorder }}; border-radius:10px; background:{{ themeInputBg }}; padding:6px 10px;">
+              <input id="start-h-input" value="{{ draftStartH }}" onInput="{{ setDraftStartH }}" onKeyDown="{{ onStartHKeyDown }}" placeholder="08" maxLength="2" inputMode="numeric" style="width:36px; border:none; background:transparent; font-family:'IBM Plex Mono', monospace; font-size:14px; font-weight:600; text-align:center; color:{{ themeText }}; outline:none;" />
+              <span style="font-family:'IBM Plex Mono', monospace; font-weight:700; color:{{ themeTextMuted }}; margin:0 2px;">:</span>
+              <input id="start-m-input" value="{{ draftStartM }}" onInput="{{ setDraftStartM }}" onKeyDown="{{ onStartMKeyDown }}" placeholder="00" maxLength="2" inputMode="numeric" style="width:36px; border:none; background:transparent; font-family:'IBM Plex Mono', monospace; font-size:14px; font-weight:600; text-align:center; color:{{ themeText }}; outline:none;" />
+            </div>
+          </div>
+
+          <!-- End Time Group -->
+          <div style="flex:1; min-width:140px; display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:12px; font-weight:600; color:{{ themeTextSecondary }};">End Time</span>
+            <div class="time-input-box" style="display:inline-flex; align-items:center; justify-content:center; border:1px solid {{ themeInputBorder }}; border-radius:10px; background:{{ themeInputBg }}; padding:6px 10px;">
+              <input id="end-h-input" value="{{ draftEndH }}" onInput="{{ setDraftEndH }}" onKeyDown="{{ onEndHKeyDown }}" placeholder="09" maxLength="2" inputMode="numeric" style="width:36px; border:none; background:transparent; font-family:'IBM Plex Mono', monospace; font-size:14px; font-weight:600; text-align:center; color:{{ themeText }}; outline:none;" />
+              <span style="font-family:'IBM Plex Mono', monospace; font-weight:700; color:{{ themeTextMuted }}; margin:0 2px;">:</span>
+              <input id="end-m-input" value="{{ draftEndM }}" onInput="{{ setDraftEndM }}" onKeyDown="{{ onEndMKeyDown }}" placeholder="00" maxLength="2" inputMode="numeric" style="width:36px; border:none; background:transparent; font-family:'IBM Plex Mono', monospace; font-size:14px; font-weight:600; text-align:center; color:{{ themeText }}; outline:none;" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Duration Shortcuts -->
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          <span style="font-size:11px; color:{{ themeTextMuted }};">Quick duration:</span>
+          <button type="button" onClick="{{ setDuration30m }}" style="padding:3px 8px; border:1px solid {{ themeBorder }}; border-radius:6px; background:{{ themeCardBg }}; font-size:11px; font-family:'IBM Plex Mono', monospace; color:{{ themeTextSecondary }}; cursor:pointer;" style-hover="border-color:#2F44C8; color:#2F44C8;">+30m</button>
+          <button type="button" onClick="{{ setDuration1h }}" style="padding:3px 8px; border:1px solid {{ themeBorder }}; border-radius:6px; background:{{ themeCardBg }}; font-size:11px; font-family:'IBM Plex Mono', monospace; color:{{ themeTextSecondary }}; cursor:pointer;" style-hover="border-color:#2F44C8; color:#2F44C8;">+1h</button>
+          <button type="button" onClick="{{ setDuration2h }}" style="padding:3px 8px; border:1px solid {{ themeBorder }}; border-radius:6px; background:{{ themeCardBg }}; font-size:11px; font-family:'IBM Plex Mono', monospace; color:{{ themeTextSecondary }}; cursor:pointer;" style-hover="border-color:#2F44C8; color:#2F44C8;">+2h</button>
+          <button type="button" onClick="{{ clearTimes }}" style="padding:3px 8px; border:1px solid {{ themeBorder }}; border-radius:6px; background:transparent; font-size:11px; color:{{ themeTextMuted }}; cursor:pointer;" style-hover="color:{{ themeText }};">Clear</button>
+        </div>
+
+        <!-- Real-time Slot Conflict Warning (Clean SVG, Zero Emojis) -->
+        <sc-if value="{{ hasSlotConflict }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; align-items:flex-start; gap:8px; background:{{ themeErrorBg }}; border:1px solid {{ themeErrorBorder }}; color:{{ themeErrorText }}; padding:10px 12px; border-radius:10px; font-size:12.5px; line-height:1.4;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 16px; margin-top:1px;">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span style="font-weight:500;">{{ slotConflictMessage }}</span>
+          </div>
+        </sc-if>
+
+        <!-- Color Selector (Randomized by default, customizable) -->
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:12px; font-weight:600; color:{{ themeTextSecondary }};">Color</span>
+            <span style="font-size:11px; color:{{ themeTextMuted }};">Randomized on new tasks</span>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="6">
+              <button type="button" onClick="{{ s.pick }}" style="width:30px; height:30px; border-radius:50%; background:{{ s.bg }}; border:2.5px solid {{ s.ring }}; cursor:pointer; padding:0; box-shadow:0 1px 2px rgba(0,0,0,0.15);"></button>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display:flex; gap:10px; justify-content:flex-end; padding-top:4px;">
+          <button type="button" onClick="{{ closeModal }}" style="padding:10px 15px; border:1px solid {{ themeBorder }}; border-radius:10px; background:{{ themeCardBg }}; font-size:13.5px; font-weight:600; color:{{ themeTextSecondary }}; cursor:pointer;" style-hover="background:{{ themeHoverBg }};">Cancel</button>
+          <button type="submit" disabled="{{ hasSlotConflict }}" style="padding:10px 18px; border:none; border-radius:10px; background:#2F44C8; color:#FFFFFF; font-size:13.5px; font-weight:600; cursor:pointer; opacity:{{ submitButtonOpacity }};" style-hover="background:#2637A8;">Add Task</button>
         </div>
       </form>
     </div>
   </sc-if>
+
+  <!-- Mobile Settings Sheet Modal (Clean design, zero emojis) -->
+  <sc-if value="{{ mobileSettingsOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeMobileSettings }}" style="position:fixed; inset:0; background:rgba(18,18,22,0.55); backdrop-filter:blur(3px); display:flex; align-items:flex-end; justify-content:center; z-index:50;">
+      <div onClick="{{ stop }}" style="width:100%; max-width:480px; background:{{ themeCardBg }}; border-top:1px solid {{ themeBorder }}; border-radius:20px 20px 0 0; padding:24px 20px 36px; box-shadow:0 -10px 30px rgba(0,0,0,0.25); display:flex; flex-direction:column; gap:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-size:17px; font-weight:700; color:{{ themeText }};">Settings</div>
+          <button type="button" onClick="{{ closeMobileSettings }}" style="border:none; background:none; color:{{ themeTextMuted }}; font-size:18px; cursor:pointer;">✕</button>
+        </div>
+
+        <!-- Profile details -->
+        <div style="display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px; background:{{ themeInputBg }}; border:1px solid {{ themeBorder }};">
+          <div style="width:40px; height:40px; flex:0 0 40px; border-radius:50%; background:{{ themeAvatarBg }}; color:{{ themeAvatarInk }}; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center;">{{ userInitials }}</div>
+          <div style="min-width:0; flex:1;">
+            <div style="font-size:14px; font-weight:600; color:{{ themeText }};">{{ userName }}</div>
+            <div style="font-size:12px; color:{{ themeTextMuted }};">{{ userEmail }}</div>
+          </div>
+        </div>
+
+        <!-- Dark mode row -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-radius:12px; background:{{ themeInputBg }}; border:1px solid {{ themeBorder }};">
+          <div style="display:flex; align-items:center; gap:10px; font-size:14px; font-weight:500; color:{{ themeText }};">
+            <sc-if value="{{ isDarkMode }}" hint-placeholder-val="{{ false }}">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </sc-if>
+            <sc-if value="{{ isLightMode }}" hint-placeholder-val="{{ true }}">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </sc-if>
+            <span>Dark Mode</span>
+          </div>
+          <button type="button" onClick="{{ toggleDarkMode }}" style="position:relative; width:44px; height:24px; border-radius:12px; border:none; background:{{ darkModeToggleBg }}; cursor:pointer; padding:2px; transition:background 0.2s;">
+            <span style="display:block; width:20px; height:20px; border-radius:50%; background:#FFFFFF; transform:{{ darkModeKnobTranslate }}; transition:transform 0.2s;"></span>
+          </button>
+        </div>
+
+        <!-- Download App -->
+        <button type="button" onClick="{{ installApp }}" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border:1px solid {{ themeBorder }}; border-radius:12px; background:{{ themeCardBg }}; color:{{ themeText }}; font-size:13.5px; font-weight:600; cursor:pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Download & Install DoneIt App</span>
+        </button>
+
+        <!-- Logout -->
+        <button type="button" onClick="{{ signOut }}" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border:1px solid {{ themeLogoutBorder }}; border-radius:12px; background:{{ themeLogoutBg }}; color:{{ themeLogoutInk }}; font-size:13.5px; font-weight:600; cursor:pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          <span>Log out</span>
+        </button>
+      </div>
+    </div>
+  </sc-if>
+
 </div>
 </sc-if>
 
+<!-- AUTHENTICATION FLOW (Clean, zero emojis) -->
 <sc-if value="{{ isNotAuthenticated }}" hint-placeholder-val="{{ true }}">
   <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:url('./image.jpg') center center / cover no-repeat fixed; font-family:Figtree, Helvetica, Arial, sans-serif; padding:24px; position:relative;">
-    <div style="position:absolute; inset:0; background:rgba(15, 23, 42, 0.28); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);"></div>
+    <div style="position:absolute; inset:0; background:rgba(15, 23, 42, 0.32); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);"></div>
     <div style="position:relative; z-index:1; width:100%; max-width:410px; background:rgba(255, 255, 255, 0.95); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid rgba(255, 255, 255, 0.85); border-radius:22px; padding:32px 28px; box-shadow:0 24px 60px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.08); display:flex; flex-direction:column; gap:20px;">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
         <div>
@@ -369,21 +658,23 @@
   </div>
 </sc-if>
 
+<!-- AUTH CHECKING SPINNER -->
 <sc-if value="{{ isAuthChecking }}" hint-placeholder-val="{{ false }}">
   <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:url('./image.jpg') center center / cover no-repeat fixed; font-family:Figtree, Helvetica, Arial, sans-serif; position:relative;">
     <div style="position:absolute; inset:0; background:rgba(15, 23, 42, 0.35); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);"></div>
     <div style="position:relative; z-index:1; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.92); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); padding:16px 24px; border-radius:14px; box-shadow:0 16px 40px rgba(0,0,0,0.2); color:#23231F; font-size:14px; font-weight:600;">
       <span style="width:18px; height:18px; border:2.5px solid #2F44C8; border-top-color:transparent; border-radius:50%; animation:sc-spin 0.8s linear infinite;"></span>
-      <span>Loading DoneIt...</span>
+      <span>Loading DoneIt Planner...</span>
     </div>
   </div>
 </sc-if>
 
+<!-- INSTALL PWA MODAL (Zero Emojis, Clean Vector Icons) -->
 <sc-if value="{{ showInstallModal }}" hint-placeholder-val="{{ false }}">
-  <div style="position:fixed; inset:0; background:rgba(20,20,18,0.5); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:9999; padding:20px;">
-    <div style="width:100%; max-width:440px; background:#FFFFFF; border:1px solid #E7E7E1; border-radius:18px; padding:26px 24px; box-shadow:0 24px 50px rgba(0,0,0,0.25); display:flex; flex-direction:column; gap:18px; font-family:Figtree, sans-serif;">
+  <div style="position:fixed; inset:0; background:rgba(20,20,18,0.55); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:9999; padding:20px;">
+    <div style="width:100%; max-width:440px; background:{{ themeCardBg }}; border:1px solid {{ themeBorder }}; border-radius:18px; padding:26px 24px; box-shadow:0 24px 50px rgba(0,0,0,0.28); display:flex; flex-direction:column; gap:18px; font-family:Figtree, sans-serif; color:{{ themeText }};">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div style="font-size:18px; font-weight:700; color:#23231F; display:flex; align-items:center; gap:8px;">
+        <div style="font-size:18px; font-weight:700; color:{{ themeText }}; display:flex; align-items:center; gap:8px;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2F44C8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="7 10 12 15 17 10"/>
@@ -391,33 +682,46 @@
           </svg>
           <span>Download & Install DoneIt</span>
         </div>
-        <button type="button" onClick="{{ closeInstallModal }}" style="border:none; background:none; font-size:18px; color:#8A8A80; cursor:pointer; padding:4px;" style-hover="color:#23231F;">✕</button>
+        <button type="button" onClick="{{ closeInstallModal }}" style="border:none; background:none; font-size:18px; color:{{ themeTextMuted }}; cursor:pointer; padding:4px;" style-hover="color:{{ themeText }};">✕</button>
       </div>
-      <div style="font-size:13.5px; line-height:1.5; color:#5C5C54; display:flex; flex-direction:column; gap:12px;">
-        <p style="margin:0;">DoneIt can be downloaded and installed as a standalone app on your desktop computer or mobile phone:</p>
-        <div style="background:#F7F7F4; border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:6px;">
-          <div style="font-weight:600; color:#23231F;">💻 Windows / Mac (Chrome & Edge)</div>
-          <div style="font-size:12.5px; color:#6E6E64;">Click the <strong>Install</strong> button (icon with computer monitor and down arrow, or ⊕) in the browser address bar at the top right, then click <em>Install</em>.</div>
+      <div style="font-size:13.5px; line-height:1.5; color:{{ themeTextSecondary }}; display:flex; flex-direction:column; gap:12px;">
+        <p style="margin:0;">DoneIt Planner can be installed as a standalone app on your desktop computer or mobile phone:</p>
+        
+        <div style="background:{{ themeInputBg }}; border:1px solid {{ themeBorder }}; border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:6px;">
+          <div style="font-weight:600; color:{{ themeText }}; display:flex; align-items:center; gap:6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            <span>Windows & Mac (Chrome & Edge)</span>
+          </div>
+          <div style="font-size:12.5px; color:{{ themeTextMuted }};">Click the <strong>Install</strong> icon in the address bar at the top right, then select <em>Install</em>.</div>
         </div>
-        <div style="background:#F7F7F4; border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:6px;">
-          <div style="font-weight:600; color:#23231F;">📱 iPhone & iPad (Safari)</div>
-          <div style="font-size:12.5px; color:#6E6E64;">Tap the <strong>Share</strong> button at the bottom of Safari, scroll down, and select <strong>Add to Home Screen</strong>.</div>
+
+        <div style="background:{{ themeInputBg }}; border:1px solid {{ themeBorder }}; border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:6px;">
+          <div style="font-weight:600; color:{{ themeText }}; display:flex; align-items:center; gap:6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+            <span>iPhone & iPad (Safari)</span>
+          </div>
+          <div style="font-size:12.5px; color:{{ themeTextMuted }};">Tap the <strong>Share</strong> button at the bottom of Safari, scroll down, and select <strong>Add to Home Screen</strong>.</div>
         </div>
-        <div style="background:#F7F7F4; border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:6px;">
-          <div style="font-weight:600; color:#23231F;">🤖 Android (Chrome)</div>
-          <div style="font-size:12.5px; color:#6E6E64;">Tap the three dots menu (⋮) in the top right, then select <strong>Install App</strong> or <strong>Add to Home Screen</strong>.</div>
+
+        <div style="background:{{ themeInputBg }}; border:1px solid {{ themeBorder }}; border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:6px;">
+          <div style="font-weight:600; color:{{ themeText }}; display:flex; align-items:center; gap:6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+            <span>Android (Chrome)</span>
+          </div>
+          <div style="font-size:12.5px; color:{{ themeTextMuted }};">Tap the menu button in the top right, then select <strong>Install App</strong> or <strong>Add to Home Screen</strong>.</div>
         </div>
       </div>
       <div style="display:flex; justify-content:flex-end; gap:10px;">
         <sc-if value="{{ canDirectInstall }}" hint-placeholder-val="{{ false }}">
           <button type="button" onClick="{{ triggerDirectInstall }}" style="padding:9px 18px; border:none; border-radius:10px; background:#2F44C8; color:#FFFFFF; font-size:13.5px; font-weight:600; cursor:pointer;" style-hover="background:#2637A8;">Install Directly</button>
         </sc-if>
-        <button type="button" onClick="{{ closeInstallModal }}" style="padding:9px 16px; border:1px solid #E2E2DB; border-radius:10px; background:#FFFFFF; color:#5C5C54; font-size:13.5px; font-weight:600; cursor:pointer;" style-hover="background:#F7F7F4;">Close</button>
+        <button type="button" onClick="{{ closeInstallModal }}" style="padding:9px 16px; border:1px solid {{ themeBorder }}; border-radius:10px; background:{{ themeCardBg }}; color:{{ themeTextSecondary }}; font-size:13.5px; font-weight:600; cursor:pointer;" style-hover="background:{{ themeHoverBg }};">Close</button>
       </div>
     </div>
   </div>
 </sc-if>
-<script type="text/x-dc" data-dc-script data-props="{&quot;showWeekend&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Week view&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;comfortable&quot;,&quot;compact&quot;],&quot;default&quot;:&quot;comfortable&quot;,&quot;tsType&quot;:&quot;'comfortable' | 'compact'&quot;,&quot;section&quot;:&quot;Day view&quot;},&quot;startHour&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:6,&quot;min&quot;:0,&quot;max&quot;:12,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Day view&quot;},&quot;endHour&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:21,&quot;min&quot;:13,&quot;max&quot;:23,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Day view&quot;},&quot;showCompleted&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Tasks&quot;}}">
+
+<script type="text/x-dc" data-dc-script data-props="{&quot;showWeekend&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Week view&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;comfortable&quot;,&quot;compact&quot;],&quot;default&quot;:&quot;comfortable&quot;,&quot;tsType&quot;:&quot;'comfortable' | 'compact'&quot;,&quot;section&quot;:&quot;Day view&quot;},&quot;startHour&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:6,&quot;min&quot;:0,&quot;max&quot;:12,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Day view&quot;},&quot;endHour&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:22,&quot;min&quot;:13,&quot;max&quot;:24,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Day view&quot;},&quot;showCompleted&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Tasks&quot;}}">
 const SUPABASE_URL = 'https://oqdkkwchwyurvwpwtsft.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xZGtrd2Nod3l1cnZ3cHd0c2Z0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyMDkxNjAsImV4cCI6MjEwNDc4NTE2MH0.-Hud7OQWGcTV5OUKpRGfkps1eY0I0j0AwqFq8YWOJqY';
 
@@ -433,21 +737,25 @@ function getSupabase() {
 
 class Component extends DCLogic {
   PALETTE = {
-    blue:   { bg: '#C3D8FF', bar: '#4F7FE8', ink: '#1B3573' },
-    green:  { bg: '#BFEBCF', bar: '#3FB177', ink: '#144F38' },
-    yellow: { bg: '#FBEBA4', bar: '#E5BA1E', ink: '#57470B' },
-    orange: { bg: '#FED2AE', bar: '#F28B32', ink: '#6B3A13' },
-    purple: { bg: '#DCCBFF', bar: '#8A6BE2', ink: '#3B2A69' },
-    pink:   { bg: '#FFC9DC', bar: '#E56096', ink: '#68203E' },
+    blue:   { bg: '#C3D8FF', darkBg: '#1B2C50', bar: '#4F7FE8', ink: '#1B3573', darkInk: '#D2E2FF' },
+    green:  { bg: '#BFEBCF', darkBg: '#153A26', bar: '#3FB177', ink: '#144F38', darkInk: '#CBF6DE' },
+    yellow: { bg: '#FBEBA4', darkBg: '#3C330F', bar: '#E5BA1E', ink: '#57470B', darkInk: '#FFF3BA' },
+    orange: { bg: '#FED2AE', darkBg: '#402611', bar: '#F28B32', ink: '#6B3A13', darkInk: '#FFE0C8' },
+    purple: { bg: '#DCCBFF', darkBg: '#2E1E52', bar: '#8A6BE2', ink: '#3B2A69', darkInk: '#ECE2FF' },
+    pink:   { bg: '#FFC9DC', darkBg: '#451B2E', bar: '#E56096', ink: '#68203E', darkInk: '#FFD4E4' },
   };
+  PALETTE_KEYS = ['blue', 'green', 'yellow', 'orange', 'purple', 'pink'];
+
   DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   DOWFULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   MONTH = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  
   TODAY = (() => {
     const d = new Date();
     const p = (n) => String(n).padStart(2, '0');
     return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
   })();
+
   WEEK_START = (() => {
     const d = new Date();
     const day = d.getDay();
@@ -457,15 +765,28 @@ class Component extends DCLogic {
     return mon.getFullYear() + '-' + p(mon.getMonth() + 1) + '-' + p(mon.getDate());
   })();
 
+  getRandomColor() {
+    return this.PALETTE_KEYS[Math.floor(Math.random() * this.PALETTE_KEYS.length)];
+  }
+
   state = {
     view: 'today',
     date: this.TODAY,
     modalOpen: false,
+    mobileSettingsOpen: false,
+    showAllHours: false,
+    earlierExpanded: false,
+    laterExpanded: false,
     draftTitle: '',
     draftDay: '',
-    draftStart: '',
-    draftEnd: '',
-    draftColor: 'blue',
+    draftStartH: '',
+    draftStartM: '',
+    draftEndH: '',
+    draftEndM: '',
+    draftColor: this.getRandomColor(),
+    userSelectedColor: false,
+    endManuallySet: false,
+    slotConflict: null,
     dragId: null,
     nextId: 1,
     tasks: [],
@@ -480,6 +801,15 @@ class Component extends DCLogic {
     authError: '',
     authMessage: '',
     showInstallModal: false,
+    darkMode: (() => {
+      try {
+        const saved = localStorage.getItem('doneit_theme');
+        if (saved) return saved === 'dark';
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      } catch (_) {
+        return false;
+      }
+    })(),
   };
 
   constructor(props) {
@@ -519,7 +849,25 @@ class Component extends DCLogic {
     return timeGreeting + ', ' + displayName;
   }
 
+  toggleDarkMode() {
+    this.setState((s) => {
+      const next = !s.darkMode;
+      try {
+        localStorage.setItem('doneit_theme', next ? 'dark' : 'light');
+        if (typeof document !== 'undefined') {
+          if (next) document.body.classList.add('dark-mode');
+          else document.body.classList.remove('dark-mode');
+        }
+      } catch (_) {}
+      return { darkMode: next };
+    });
+  }
+
   async componentDidMount() {
+    if (this.state.darkMode && typeof document !== 'undefined') {
+      document.body.classList.add('dark-mode');
+    }
+
     const client = getSupabase();
     if (!client) {
       this.setState({ authChecking: false, syncStatus: 'offline' });
@@ -564,6 +912,17 @@ class Component extends DCLogic {
     if (this.authSubscription) {
       this.authSubscription.unsubscribe();
     }
+  }
+
+  scrollToTodayInWeek() {
+    setTimeout(() => {
+      const container = document.getElementById('week-scroll-container');
+      const todayEl = document.getElementById('week-today-col');
+      if (container && todayEl) {
+        const offset = todayEl.offsetLeft - container.offsetLeft;
+        container.scrollTo({ left: Math.max(0, offset - 12), behavior: 'smooth' });
+      }
+    }, 40);
   }
 
   async loadUserTasks(client) {
@@ -732,6 +1091,7 @@ class Component extends DCLogic {
       authMode: 'signin',
       authError: '',
       authMessage: '',
+      mobileSettingsOpen: false,
     });
     this.saveTasks([]);
   }
@@ -770,7 +1130,7 @@ class Component extends DCLogic {
     } catch (_) {}
   }
 
-  // --- date helpers -------------------------------------------------
+  // --- date & time helpers -------------------------------------------------
   parse(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); }
   iso(d) {
     const p = (n) => String(n).padStart(2, '0');
@@ -789,16 +1149,43 @@ class Component extends DCLogic {
     }
     return this.MONTH[start.getMonth()] + ' ' + start.getDate() + ' – ' + this.MONTH[end.getMonth()] + ' ' + end.getDate();
   }
-  mins(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
+
+  mins(t) {
+    if (!t) return 0;
+    const parts = String(t).split(':');
+    const h = Number(parts[0]) || 0;
+    const m = Number(parts[1]) || 0;
+    return h * 60 + m;
+  }
   fmt(m) {
     const p = (n) => String(n).padStart(2, '0');
-    return p(Math.floor(m / 60) % 24) + ':' + p(m % 60);
+    let total = Math.max(0, Math.min(24 * 60, m));
+    const hours = Math.floor(total / 60);
+    const minutes = total % 60;
+    return p(hours) + ':' + p(minutes);
   }
   color(k) { return this.PALETTE[k] || this.PALETTE.blue; }
 
   get hourHeight() { return (this.props.density || 'comfortable') === 'compact' ? 52 : 70; }
-  get startHour() { return this.props.startHour ?? 6; }
-  get endHour() { return this.props.endHour ?? 21; }
+
+  // Check if slot overlaps an existing task
+  checkSlotConflict(candidateDay, startStr, endStr, excludeId = null) {
+    if (!candidateDay || !startStr) return null;
+    const sMins = this.mins(startStr);
+    const eMins = endStr ? this.mins(endStr) : sMins + 60;
+    if (eMins <= sMins) {
+      return 'End time must be after start time.';
+    }
+    const dayTasks = this.state.tasks.filter((t) => t.date === candidateDay && t.start && t.end && t.id !== excludeId);
+    for (const t of dayTasks) {
+      const tStart = this.mins(t.start);
+      const tEnd = this.mins(t.end);
+      if (Math.max(sMins, tStart) < Math.min(eMins, tEnd)) {
+        return `Slot conflict: "${t.title}" is already scheduled (${t.start} – ${t.end}).`;
+      }
+    }
+    return null;
+  }
 
   visible(list) {
     return (this.props.showCompleted ?? true) ? list : list.filter((t) => !t.done);
@@ -819,6 +1206,7 @@ class Component extends DCLogic {
       });
     }
   }
+
   toggleDone(id) {
     let nextDone = false;
     this.setState((s) => {
@@ -839,11 +1227,12 @@ class Component extends DCLogic {
       });
     }
   }
+
   addTask(fields) {
     const tempId = Date.now();
     const taskPayload = {
       title: fields.title,
-      color: fields.color || 'blue',
+      color: fields.color || this.getRandomColor(),
       date: fields.date || null,
       start: fields.start || null,
       end: fields.end || null,
@@ -879,6 +1268,7 @@ class Component extends DCLogic {
       });
     }
   }
+
   deleteTask(id) {
     this.setState((s) => {
       const tasks = s.tasks.filter((t) => t.id !== id);
@@ -892,6 +1282,7 @@ class Component extends DCLogic {
       });
     }
   }
+
   dragStart(id) {
     return (e) => {
       if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(id)); } catch (_) {} }
@@ -900,12 +1291,68 @@ class Component extends DCLogic {
   }
   allowDrop = (e) => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; };
 
+  // Live drag & resize extending blocks across multiple hours (supports 01:00 to 24:00)
+  startResize(t, edge, e) {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const startMins = this.mins(t.start);
+    const endMins = this.mins(t.end || this.fmt(startMins + 60));
+    const hh = this.hourHeight;
+
+    const onMove = (moveEv) => {
+      const curY = moveEv.touches ? moveEv.touches[0].clientY : moveEv.clientY;
+      const diffPx = curY - clientY;
+      // Snap to 15-minute intervals for fluid precision
+      const diffMins = Math.round((diffPx / hh) * 4) * 15;
+
+      if (edge === 'bottom') {
+        let nextEndMins = endMins + diffMins;
+        if (nextEndMins < startMins + 15) nextEndMins = startMins + 15;
+        if (nextEndMins > 24 * 60) nextEndMins = 24 * 60;
+        const nextEnd = this.fmt(nextEndMins);
+        this.setState((s) => ({
+          tasks: s.tasks.map((x) => (x.id === t.id ? { ...x, end: nextEnd } : x))
+        }));
+      } else if (edge === 'top') {
+        let nextStartMins = startMins + diffMins;
+        if (nextStartMins > endMins - 15) nextStartMins = endMins - 15;
+        if (nextStartMins < 1 * 60) nextStartMins = 1 * 60; // 01:00 minimum
+        const nextStart = this.fmt(nextStartMins);
+        this.setState((s) => ({
+          tasks: s.tasks.map((x) => (x.id === t.id ? { ...x, start: nextStart } : x))
+        }));
+      }
+    };
+
+    const onEnd = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onEnd);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onEnd);
+      const updated = this.state.tasks.find((x) => x.id === t.id);
+      if (updated) {
+        this.patch(t.id, { start: updated.start, end: updated.end });
+      }
+    };
+
+    window.addEventListener('mousemove', onMove, { passive: false });
+    window.addEventListener('mouseup', onEnd);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onEnd);
+  }
+
   taskChip(t, opts) {
     const c = this.color(t.color);
+    const dark = this.state.darkMode;
     return {
       id: t.id,
       title: t.title,
-      bg: c.bg, bar: c.bar, ink: c.ink,
+      bg: dark ? c.darkBg : c.bg,
+      bar: c.bar,
+      ink: dark ? c.darkInk : c.ink,
       mark: t.done ? '✓' : '',
       strike: t.done ? 'line-through' : 'none',
       opacity: t.done ? '0.55' : '1',
@@ -913,24 +1360,93 @@ class Component extends DCLogic {
       toggle: () => this.toggleDone(t.id),
       remove: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.deleteTask(t.id); },
       dragStart: this.dragStart(t.id),
+      resizeTopStart: (e) => this.startResize(t, 'top', e),
+      resizeBottomStart: (e) => this.startResize(t, 'bottom', e),
     };
   }
 
   renderVals() {
     const s = this.state;
+    const dark = s.darkMode;
     const hh = this.hourHeight;
-    const startMin = this.startHour * 60;
+
+    const theme = {
+      bg: dark ? '#121215' : '#F7F7F4',
+      cardBg: dark ? '#1B1B20' : '#FFFFFF',
+      sidebarBg: dark ? '#16161B' : '#FFFFFF',
+      border: dark ? '#2A2A33' : '#E7E7E1',
+      borderLight: dark ? '#23232C' : '#EFEFE9',
+      text: dark ? '#F3F3F7' : '#23231F',
+      textSecondary: dark ? '#A1A1B2' : '#5C5C54',
+      textMuted: dark ? '#737383' : '#9A9A90',
+      hoverBg: dark ? '#262630' : '#F1F1EC',
+      inputBg: dark ? '#131317' : '#FFFFFF',
+      inputBorder: dark ? '#30303D' : '#E2E2DB',
+      slotBorder: dark ? '#22222A' : '#EFEFE9',
+      avatarBg: dark ? '#332654' : '#E4DAFB',
+      avatarInk: dark ? '#D3BFFF' : '#4A3A7A',
+      logoutBorder: dark ? '#452026' : '#E2E2DB',
+      logoutBg: dark ? '#251619' : '#FFFFFF',
+      logoutInk: dark ? '#FF8C94' : '#5C5C54',
+      logoutHoverBg: dark ? '#3A181E' : '#FEECEE',
+      errorBg: dark ? '#38161A' : '#FEECEE',
+      errorBorder: dark ? '#632128' : '#F8B4B7',
+      errorText: dark ? '#FF9499' : '#CE2C31',
+    };
+
     const dayTasks = this.forDate(s.date);
     const scheduled = dayTasks.filter((t) => t.start).sort((a, b) => this.mins(a.start) - this.mins(b.start));
     const unscheduled = dayTasks.filter((t) => !t.start);
 
+    // Dynamic hour bounds (01 to 24 accessible)
+    let startH = 6;
+    let endH = 22;
+
+    if (s.showAllHours) {
+      startH = 1;
+      endH = 24;
+    } else {
+      if (s.earlierExpanded) startH = 1;
+      if (s.laterExpanded) endH = 24;
+      // Auto-expand if tasks exist outside current window
+      scheduled.forEach((t) => {
+        if (t.start) {
+          const sh = Math.floor(this.mins(t.start) / 60);
+          if (sh < startH && sh >= 1) startH = sh;
+        }
+        if (t.end) {
+          const eh = Math.ceil(this.mins(t.end) / 60);
+          if (eh > endH && eh <= 24) endH = eh;
+        }
+      });
+    }
+
+    const startMin = startH * 60;
     const hours = [];
-    for (let h = this.startHour; h <= this.endHour; h++) {
+    for (let h = startH; h <= endH; h++) {
       const label = String(h).padStart(2, '0') + ':00';
       hours.push({
         label, height: hh,
         over: this.allowDrop,
-        create: () => this.setState({ modalOpen: true, draftTitle: '', draftDay: s.date, draftStart: label, draftEnd: String(h + 1).padStart(2, '0') + ':00', draftColor: 'blue' }),
+        create: () => {
+          const nextH = h >= 24 ? 24 : h + 1;
+          const sh = String(h).padStart(2, '0');
+          const eh = String(nextH).padStart(2, '0');
+          const conflict = this.checkSlotConflict(s.date, sh + ':00', eh + ':00');
+          this.setState({
+            modalOpen: true,
+            draftTitle: '',
+            draftDay: s.date,
+            draftStartH: sh,
+            draftStartM: '00',
+            draftEndH: eh,
+            draftEndM: '00',
+            draftColor: this.getRandomColor(),
+            userSelectedColor: false,
+            endManuallySet: false,
+            slotConflict: conflict,
+          });
+        },
         drop: (e) => {
           e.preventDefault();
           const id = s.dragId;
@@ -950,22 +1466,6 @@ class Component extends DCLogic {
       return { ...chip, top: Math.max(0, top), height, mark: t.done ? '✓' : '·' };
     });
 
-    const strip = [];
-    for (let i = -1; i < 6; i++) {
-      const iso = this.shift(this.TODAY, i);
-      const active = iso === s.date;
-      const n = this.forDate(iso).length;
-      strip.push({
-        dow: iso === this.TODAY ? 'TODAY' : this.DOW[this.parse(iso).getDay()],
-        num: this.parse(iso).getDate(),
-        count: n === 1 ? '1 task' : n + ' tasks',
-        bg: active ? '#EEF1FF' : '#FFFFFF',
-        border: active ? '#2F44C8' : '#E7E7E1',
-        ink: active ? '#2F44C8' : '#23231F',
-        go: () => this.setState({ view: 'today', date: iso }),
-      });
-    }
-
     const lookahead = [1, 2].map((n) => {
       const iso = this.shift(s.date, n);
       const list = this.forDate(iso);
@@ -978,19 +1478,23 @@ class Component extends DCLogic {
       };
     });
 
-    const weekLen = (this.props.showWeekend ?? true) ? 7 : 5;
     const weekDays = [];
-    for (let i = 0; i < weekLen; i++) {
+    for (let i = 0; i < 7; i++) {
       const iso = this.shift(this.WEEK_START, i);
       const list = this.forDate(iso);
-      const active = iso === this.TODAY;
+      const isToday = iso === this.TODAY;
+      const isPast = iso < this.TODAY;
       weekDays.push({
+        colId: isToday ? 'week-today-col' : `week-day-${i}`,
         dow: this.DOW[this.parse(iso).getDay()],
         num: this.parse(iso).getDate(),
         count: list.length === 1 ? '1 task' : list.length + ' tasks',
-        bg: active ? '#FFFFFF' : '#FCFCFA',
-        border: active ? '#2F44C8' : '#E7E7E1',
-        ink: active ? '#2F44C8' : '#23231F',
+        bg: isToday ? (dark ? '#22232E' : '#FFFFFF') : (dark ? '#18181D' : '#FCFCFA'),
+        border: isToday ? '#2F44C8' : theme.border,
+        ink: isToday ? '#2F44C8' : theme.text,
+        colOpacity: isPast ? '0.7' : '1',
+        badge: isToday ? 'TODAY' : (isPast ? 'PAST' : ''),
+        badgeColor: isToday ? '#2F44C8' : theme.textMuted,
         items: list.map((t) => this.taskChip(t, { blankRange: false })),
         open: () => this.setState({ view: 'today', date: iso }),
         over: this.allowDrop,
@@ -1001,19 +1505,30 @@ class Component extends DCLogic {
     const unassignedList = this.visible(s.tasks.filter((t) => !t.date));
     const weekEndIso = this.shift(this.WEEK_START, 6);
 
+    // Forthcoming days options starting from TODAY onwards
+    const dayOptions = [{ value: '', label: 'Unassigned' }];
+    for (let i = 0; i < 14; i++) {
+      const iso = this.shift(this.TODAY, i);
+      const d = this.parse(iso);
+      const dayName = this.DOWFULL[d.getDay()];
+      const monthName = this.MONTH[d.getMonth()].slice(0, 3);
+      let label;
+      if (i === 0) {
+        label = `Today (${dayName}, ${monthName} ${d.getDate()})`;
+      } else if (i === 1) {
+        label = `Tomorrow (${dayName}, ${monthName} ${d.getDate()})`;
+      } else {
+        label = `${dayName}, ${monthName} ${d.getDate()}`;
+      }
+      dayOptions.push({ value: iso, label });
+    }
+
     const groups = [{ label: 'UNASSIGNED', items: unassignedList }];
     for (let i = 0; i < 7; i++) {
       const iso = this.shift(this.WEEK_START, i);
       const list = this.forDate(iso);
       if (list.length) groups.push({ label: this.DOWFULL[this.parse(iso).getDay()].toUpperCase(), items: list, iso });
     }
-
-    const dayOptions = [{ value: '', label: 'Unassigned' }].concat(
-      [0, 1, 2, 3, 4, 5, 6].map((i) => {
-        const iso = this.shift(this.WEEK_START, i);
-        return { value: iso, label: this.DOWFULL[this.parse(iso).getDay()] + ' ' + this.parse(iso).getDate() };
-      })
-    );
 
     const openTotal = s.tasks.filter((t) => !t.done).length;
 
@@ -1024,16 +1539,48 @@ class Component extends DCLogic {
     ].map((n) => ({
       label: n.label,
       count: n.count,
-      bg: s.view === n.key ? '#EEF1FF' : 'transparent',
-      ink: s.view === n.key ? '#2F44C8' : '#4C4C44',
+      bg: s.view === n.key ? (dark ? '#222642' : '#EEF1FF') : 'transparent',
+      ink: s.view === n.key ? '#2F44C8' : theme.textSecondary,
       weight: s.view === n.key ? 600 : 500,
-      go: () => this.setState({ view: n.key }),
+      go: () => {
+        this.setState({ view: n.key });
+        if (n.key === 'week') this.scrollToTodayInWeek();
+      },
     }));
 
+    // Start & End drafts formatted
+    const startCandidate = (s.draftStartH && s.draftStartM) ? `${s.draftStartH}:${s.draftStartM}` : (s.draftStartH ? `${s.draftStartH}:00` : '');
+    const endCandidate = (s.draftEndH && s.draftEndM) ? `${s.draftEndH}:${s.draftEndM}` : (s.draftEndH ? `${s.draftEndH}:00` : '');
+
     return {
-      navItems,
-      syncStatusText: s.syncStatus === 'synced' ? 'Supabase Synced' : (s.syncStatus === 'error' ? 'Sync Error' : (s.syncStatus === 'offline' ? 'Offline' : 'Connecting...')),
-      syncColor: s.syncStatus === 'synced' ? '#10B981' : (s.syncStatus === 'error' ? '#EF4444' : '#F59E0B'),
+      themeBg: theme.bg,
+      themeCardBg: theme.cardBg,
+      themeSidebarBg: theme.sidebarBg,
+      themeBorder: theme.border,
+      themeBorderLight: theme.borderLight,
+      themeText: theme.text,
+      themeTextSecondary: theme.textSecondary,
+      themeTextMuted: theme.textMuted,
+      themeHoverBg: theme.hoverBg,
+      themeInputBg: theme.inputBg,
+      themeInputBorder: theme.inputBorder,
+      themeSlotBorder: theme.slotBorder,
+      themeAvatarBg: theme.avatarBg,
+      themeAvatarInk: theme.avatarInk,
+      themeLogoutBorder: theme.logoutBorder,
+      themeLogoutBg: theme.logoutBg,
+      themeLogoutInk: theme.logoutInk,
+      themeLogoutHoverBg: theme.logoutHoverBg,
+      themeErrorBg: theme.errorBg,
+      themeErrorBorder: theme.errorBorder,
+      themeErrorText: theme.errorText,
+
+      isDarkMode: dark,
+      isLightMode: !dark,
+      darkModeToggleBg: dark ? '#2F44C8' : '#D0D0CA',
+      darkModeKnobTranslate: dark ? 'translateX(18px)' : 'translateX(0px)',
+      toggleDarkMode: () => this.toggleDarkMode(),
+
       isAuthenticated: !!s.user,
       isNotAuthenticated: !s.user && !s.authChecking,
       isAuthChecking: s.authChecking,
@@ -1042,6 +1589,393 @@ class Component extends DCLogic {
       userEmail: s.user ? (s.user.email || '') : '',
       userInitials: this.getUserInitials(this.getUserName(s.user)),
       signOut: () => this.handleSignOut(),
+
+      mobileSettingsOpen: s.mobileSettingsOpen,
+      openMobileSettings: () => this.setState({ mobileSettingsOpen: true }),
+      closeMobileSettings: () => this.setState({ mobileSettingsOpen: false }),
+
+      mobileDayColor: s.view === 'today' ? '#2F44C8' : theme.textMuted,
+      mobileWeekColor: s.view === 'week' ? '#2F44C8' : theme.textMuted,
+      mobileTasksColor: s.view === 'tasks' ? '#2F44C8' : theme.textMuted,
+
+      goDayView: () => this.setState({ view: 'today', date: this.TODAY }),
+      goWeekView: () => {
+        this.setState({ view: 'week' });
+        this.scrollToTodayInWeek();
+      },
+      goTasksView: () => this.setState({ view: 'tasks' }),
+
+      navItems,
+      isDay: s.view === 'today',
+      isWeek: s.view === 'week',
+      isTasks: s.view === 'tasks',
+
+      dayTitle: this.longLabel(s.date),
+      daySummary: scheduled.length + ' scheduled · ' + unscheduled.length + ' unscheduled',
+      prevDay: () => this.setState({ date: this.shift(s.date, -1) }),
+      nextDay: () => this.setState({ date: this.shift(s.date, 1) }),
+      goToday: () => this.setState({ date: this.TODAY, view: 'today' }),
+
+      hoursViewLabel: s.showAllHours ? '24h view' : 'Standard 6–22h',
+      toggleAllHours: () => this.setState((prev) => ({ showAllHours: !prev.showAllHours })),
+      canShowEarlierHours: !s.showAllHours && startH > 1,
+      canShowLaterHours: !s.showAllHours && endH < 24,
+      scheduleStartLabel: String(startH).padStart(2, '0') + ':00',
+      scheduleEndLabel: String(endH).padStart(2, '0') + ':00',
+      revealEarlierHours: () => this.setState({ earlierExpanded: true }),
+      revealLaterHours: () => this.setState({ laterExpanded: true }),
+
+      hours,
+      blocks,
+      unscheduled: unscheduled.map((t) => this.taskChip(t)),
+      noUnscheduled: unscheduled.length === 0,
+      lookahead,
+
+      weekTitle: this.getWeekTitle(),
+      weekDays,
+      unassigned: unassignedList.map((t) => this.taskChip(t)),
+      unassignedCount: unassignedList.length === 1 ? '1 task waiting' : unassignedList.length + ' tasks waiting',
+      overDay: this.allowDrop,
+      dropUnassign: (e) => { e.preventDefault(); if (s.dragId != null) { this.patch(s.dragId, { date: null, start: null, end: null }); this.setState({ dragId: null }); } },
+
+      tasksSummary: openTotal + ' open · ' + unassignedList.length + ' still need a day',
+      taskGroups: groups.map((g) => ({
+        label: g.label,
+        count: g.items.length,
+        items: g.items.map((t) => {
+          const c = this.color(t.color);
+          const taskOptions = t.date && t.date < this.TODAY
+            ? [{ value: t.date, label: `${this.longLabel(t.date)} (Past)` }].concat(dayOptions)
+            : dayOptions;
+          return {
+            title: t.title,
+            bar: c.bar,
+            mark: t.done ? '✓' : '',
+            strike: t.done ? 'line-through' : 'none',
+            titleInk: t.done ? theme.textMuted : theme.text,
+            checkBg: t.done ? '#2F44C8' : 'transparent',
+            checkBorder: t.done ? '#2F44C8' : theme.textMuted,
+            range: t.start ? t.start + ' – ' + t.end : '',
+            day: t.date || '',
+            options: taskOptions,
+            toggle: () => this.toggleDone(t.id),
+            remove: () => this.deleteTask(t.id),
+            assign: (e) => this.patch(t.id, { date: e.target.value || null, start: e.target.value ? t.start : null, end: e.target.value ? t.end : null }),
+          };
+        }),
+      })),
+
+      dayOptions,
+      modalOpen: s.modalOpen,
+      openNew: () => {
+        const rnd = this.getRandomColor();
+        this.setState({
+          modalOpen: true,
+          draftTitle: '',
+          draftDay: s.view === 'today' ? s.date : '',
+          draftStartH: '',
+          draftStartM: '',
+          draftEndH: '',
+          draftEndM: '',
+          draftColor: rnd,
+          userSelectedColor: false,
+          endManuallySet: false,
+          slotConflict: null,
+        });
+      },
+      closeModal: () => this.setState({ modalOpen: false, slotConflict: null }),
+      stop: (e) => e.stopPropagation(),
+
+      draftTitle: s.draftTitle,
+      setDraftTitle: (e) => this.setState({ draftTitle: e.target.value }),
+      draftDay: s.draftDay,
+      setDraftDay: (e) => {
+        const d = e.target.value;
+        const conflict = this.checkSlotConflict(d, startCandidate, endCandidate);
+        this.setState({ draftDay: d, slotConflict: conflict });
+      },
+
+      // Smart Hour/Minute Inputs with Auto-Advancing Focus
+      draftStartH: s.draftStartH,
+      draftStartM: s.draftStartM,
+      draftEndH: s.draftEndH,
+      draftEndM: s.draftEndM,
+
+      setDraftStartH: (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length === 1) {
+          const n = Number(val);
+          if (n >= 3) {
+            val = String(n).padStart(2, '0');
+            const endH = String(Math.min(24, n + 1)).padStart(2, '0');
+            const newStart = `${val}:${s.draftStartM || '00'}`;
+            const newEnd = s.endManuallySet ? `${s.draftEndH || endH}:${s.draftEndM || '00'}` : `${endH}:${s.draftStartM || '00'}`;
+            const conflict = this.checkSlotConflict(s.draftDay, newStart, newEnd);
+            this.setState({
+              draftStartH: val,
+              draftEndH: s.endManuallySet ? s.draftEndH : endH,
+              draftEndM: s.endManuallySet ? s.draftEndM : (s.draftStartM || '00'),
+              slotConflict: conflict,
+            }, () => {
+              const minEl = document.getElementById('start-m-input');
+              if (minEl) { minEl.focus(); minEl.select(); }
+            });
+            return;
+          }
+        } else if (val.length === 2) {
+          let n = Number(val);
+          if (n > 24) n = 24;
+          val = String(n).padStart(2, '0');
+          const endH = String(Math.min(24, n + 1)).padStart(2, '0');
+          const newStart = `${val}:${s.draftStartM || '00'}`;
+          const newEnd = s.endManuallySet ? `${s.draftEndH || endH}:${s.draftEndM || '00'}` : `${endH}:${s.draftStartM || '00'}`;
+          const conflict = this.checkSlotConflict(s.draftDay, newStart, newEnd);
+          this.setState({
+            draftStartH: val,
+            draftEndH: s.endManuallySet ? s.draftEndH : endH,
+            draftEndM: s.endManuallySet ? s.draftEndM : (s.draftStartM || '00'),
+            slotConflict: conflict,
+          }, () => {
+            const minEl = document.getElementById('start-m-input');
+            if (minEl) { minEl.focus(); minEl.select(); }
+          });
+          return;
+        }
+        this.setState({ draftStartH: val }, () => {
+          const c = this.checkSlotConflict(s.draftDay, `${val}:${s.draftStartM || '00'}`, endCandidate);
+          this.setState({ slotConflict: c });
+        });
+      },
+
+      onStartHKeyDown: (e) => {
+        if (e.key === ':' || e.key === 'ArrowRight' || e.key === 'Enter') {
+          e.preventDefault();
+          const minEl = document.getElementById('start-m-input');
+          if (minEl) { minEl.focus(); minEl.select(); }
+        }
+      },
+
+      setDraftStartM: (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length >= 2) {
+          let n = Number(val.slice(0, 2));
+          if (n > 59) n = 59;
+          val = String(n).padStart(2, '0');
+          const sH = Number(s.draftStartH) || 8;
+          const eH = String(Math.min(24, sH + 1)).padStart(2, '0');
+          const newStart = `${s.draftStartH || '08'}:${val}`;
+          const newEnd = s.endManuallySet ? `${s.draftEndH || eH}:${s.draftEndM || '00'}` : `${eH}:${val}`;
+          const conflict = this.checkSlotConflict(s.draftDay, newStart, newEnd);
+          this.setState({
+            draftStartM: val,
+            draftEndH: s.endManuallySet ? s.draftEndH : eH,
+            draftEndM: s.endManuallySet ? s.draftEndM : val,
+            slotConflict: conflict,
+          });
+          return;
+        }
+        this.setState({ draftStartM: val }, () => {
+          const c = this.checkSlotConflict(s.draftDay, `${s.draftStartH || '08'}:${val}`, endCandidate);
+          this.setState({ slotConflict: c });
+        });
+      },
+
+      onStartMKeyDown: (e) => {
+        if (e.key === 'Backspace' && !e.target.value) {
+          const hEl = document.getElementById('start-h-input');
+          if (hEl) hEl.focus();
+        } else if (e.key === 'ArrowLeft' && e.target.selectionStart === 0) {
+          const hEl = document.getElementById('start-h-input');
+          if (hEl) hEl.focus();
+        } else if (e.key === 'ArrowRight' || e.key === 'Enter') {
+          const endEl = document.getElementById('end-h-input');
+          if (endEl) { endEl.focus(); endEl.select(); }
+        }
+      },
+
+      setDraftEndH: (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length === 1) {
+          const n = Number(val);
+          if (n >= 3) {
+            val = String(n).padStart(2, '0');
+            const newEnd = `${val}:${s.draftEndM || '00'}`;
+            const conflict = this.checkSlotConflict(s.draftDay, startCandidate, newEnd);
+            this.setState({ draftEndH: val, endManuallySet: true, slotConflict: conflict }, () => {
+              const minEl = document.getElementById('end-m-input');
+              if (minEl) { minEl.focus(); minEl.select(); }
+            });
+            return;
+          }
+        } else if (val.length === 2) {
+          let n = Number(val);
+          if (n > 24) n = 24;
+          val = String(n).padStart(2, '0');
+          const newEnd = `${val}:${s.draftEndM || '00'}`;
+          const conflict = this.checkSlotConflict(s.draftDay, startCandidate, newEnd);
+          this.setState({ draftEndH: val, endManuallySet: true, slotConflict: conflict }, () => {
+            const minEl = document.getElementById('end-m-input');
+            if (minEl) { minEl.focus(); minEl.select(); }
+          });
+          return;
+        }
+        this.setState({ draftEndH: val, endManuallySet: true }, () => {
+          const c = this.checkSlotConflict(s.draftDay, startCandidate, `${val}:${s.draftEndM || '00'}`);
+          this.setState({ slotConflict: c });
+        });
+      },
+
+      onEndHKeyDown: (e) => {
+        if (e.key === ':' || e.key === 'ArrowRight' || e.key === 'Enter') {
+          e.preventDefault();
+          const minEl = document.getElementById('end-m-input');
+          if (minEl) { minEl.focus(); minEl.select(); }
+        } else if (e.key === 'Backspace' && !e.target.value) {
+          const startMEl = document.getElementById('start-m-input');
+          if (startMEl) startMEl.focus();
+        }
+      },
+
+      setDraftEndM: (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length >= 2) {
+          let n = Number(val.slice(0, 2));
+          if (n > 59) n = 59;
+          val = String(n).padStart(2, '0');
+          const newEnd = `${s.draftEndH || '09'}:${val}`;
+          const conflict = this.checkSlotConflict(s.draftDay, startCandidate, newEnd);
+          this.setState({ draftEndM: val, endManuallySet: true, slotConflict: conflict });
+          return;
+        }
+        this.setState({ draftEndM: val, endManuallySet: true }, () => {
+          const c = this.checkSlotConflict(s.draftDay, startCandidate, `${s.draftEndH || '09'}:${val}`);
+          this.setState({ slotConflict: c });
+        });
+      },
+
+      onEndMKeyDown: (e) => {
+        if (e.key === 'Backspace' && !e.target.value) {
+          const endHEl = document.getElementById('end-h-input');
+          if (endHEl) endHEl.focus();
+        }
+      },
+
+      setDuration30m: () => {
+        const sMins = startCandidate ? this.mins(startCandidate) : 9 * 60;
+        const eMins = sMins + 30;
+        const eStr = this.fmt(eMins);
+        const [eh, em] = eStr.split(':');
+        const conflict = this.checkSlotConflict(s.draftDay, startCandidate || this.fmt(sMins), eStr);
+        this.setState({
+          draftStartH: s.draftStartH || '09',
+          draftStartM: s.draftStartM || '00',
+          draftEndH: eh,
+          draftEndM: em,
+          endManuallySet: true,
+          slotConflict: conflict,
+        });
+      },
+
+      setDuration1h: () => {
+        const sMins = startCandidate ? this.mins(startCandidate) : 9 * 60;
+        const eMins = sMins + 60;
+        const eStr = this.fmt(eMins);
+        const [eh, em] = eStr.split(':');
+        const conflict = this.checkSlotConflict(s.draftDay, startCandidate || this.fmt(sMins), eStr);
+        this.setState({
+          draftStartH: s.draftStartH || '09',
+          draftStartM: s.draftStartM || '00',
+          draftEndH: eh,
+          draftEndM: em,
+          endManuallySet: true,
+          slotConflict: conflict,
+        });
+      },
+
+      setDuration2h: () => {
+        const sMins = startCandidate ? this.mins(startCandidate) : 9 * 60;
+        const eMins = sMins + 120;
+        const eStr = this.fmt(eMins);
+        const [eh, em] = eStr.split(':');
+        const conflict = this.checkSlotConflict(s.draftDay, startCandidate || this.fmt(sMins), eStr);
+        this.setState({
+          draftStartH: s.draftStartH || '09',
+          draftStartM: s.draftStartM || '00',
+          draftEndH: eh,
+          draftEndM: em,
+          endManuallySet: true,
+          slotConflict: conflict,
+        });
+      },
+
+      clearTimes: () => {
+        this.setState({
+          draftStartH: '',
+          draftStartM: '',
+          draftEndH: '',
+          draftEndM: '',
+          endManuallySet: false,
+          slotConflict: null,
+        });
+      },
+
+      hasSlotConflict: !!s.slotConflict,
+      slotConflictMessage: s.slotConflict || '',
+      submitButtonOpacity: s.slotConflict ? '0.5' : '1',
+
+      swatches: this.PALETTE_KEYS.map((k) => ({
+        bg: this.PALETTE[k].bar,
+        ring: s.draftColor === k ? (dark ? '#FFFFFF' : '#2F44C8') : 'transparent',
+        pick: () => this.setState({ draftColor: k, userSelectedColor: true }),
+      })),
+
+      submitNew: (e) => {
+        e.preventDefault();
+        if (!s.draftTitle.trim()) return;
+        if (s.slotConflict) return;
+
+        let finalStart = null;
+        let finalEnd = null;
+
+        if (s.draftStartH) {
+          finalStart = `${s.draftStartH.padStart(2, '0')}:${(s.draftStartM || '00').padStart(2, '0')}`;
+          if (s.draftEndH) {
+            finalEnd = `${s.draftEndH.padStart(2, '0')}:${(s.draftEndM || '00').padStart(2, '0')}`;
+          } else {
+            finalEnd = this.fmt(this.mins(finalStart) + 60);
+          }
+        }
+
+        const conflict = this.checkSlotConflict(s.draftDay, finalStart, finalEnd);
+        if (conflict) {
+          this.setState({ slotConflict: conflict });
+          return;
+        }
+
+        this.addTask({
+          title: s.draftTitle.trim(),
+          color: s.draftColor,
+          date: s.draftDay || null,
+          start: finalStart,
+          end: finalEnd,
+        });
+
+        this.setState({ modalOpen: false, draftTitle: '', slotConflict: null });
+      },
+
+      quickAdd: (e) => {
+        e.preventDefault();
+        if (!s.draftTitle.trim()) return;
+        this.addTask({ title: s.draftTitle.trim(), color: this.getRandomColor() });
+        this.setState({ draftTitle: '' });
+      },
+
+      installApp: () => this.installApp(),
+      canDirectInstall: !!window.__deferredInstallPrompt,
+      triggerDirectInstall: () => this.triggerDirectInstall(),
+      showInstallModal: s.showInstallModal,
+      closeInstallModal: () => this.setState({ showInstallModal: false }),
+
       authMode: s.authMode,
       isSignInMode: s.authMode === 'signin',
       isSignUpMode: s.authMode === 'signup',
@@ -1066,80 +2000,6 @@ class Component extends DCLogic {
       authSubmitting: s.authSubmitting,
       authSubmitText: s.authSubmitting ? 'Please wait...' : (s.authMode === 'signup' ? 'Create Account' : 'Sign In'),
       submitAuth: (e) => (s.authMode === 'signup' ? this.handleSignUp(e) : this.handleSignIn(e)),
-      installApp: () => this.installApp(),
-      canDirectInstall: !!window.__deferredInstallPrompt,
-      triggerDirectInstall: () => this.triggerDirectInstall(),
-      showInstallModal: s.showInstallModal,
-      closeInstallModal: () => this.setState({ showInstallModal: false }),
-      isDay: s.view === 'today',
-      isWeek: s.view === 'week',
-      isTasks: s.view === 'tasks',
-      dayTitle: this.longLabel(s.date),
-      daySummary: scheduled.length + ' scheduled · ' + unscheduled.length + ' unscheduled',
-      prevDay: () => this.setState({ date: this.shift(s.date, -1) }),
-      nextDay: () => this.setState({ date: this.shift(s.date, 1) }),
-      goToday: () => this.setState({ date: this.TODAY, view: 'today' }),
-      strip, hours, blocks, lookahead,
-      unscheduled: unscheduled.map((t) => this.taskChip(t)),
-      noUnscheduled: unscheduled.length === 0,
-      weekTitle: this.getWeekTitle(),
-      weekDays,
-      unassigned: unassignedList.map((t) => this.taskChip(t)),
-      unassignedCount: unassignedList.length === 1 ? '1 task waiting' : unassignedList.length + ' tasks waiting',
-      overDay: this.allowDrop,
-      dropUnassign: (e) => { e.preventDefault(); if (s.dragId != null) { this.patch(s.dragId, { date: null, start: null, end: null }); this.setState({ dragId: null }); } },
-      tasksSummary: openTotal + ' open · ' + unassignedList.length + ' still need a day',
-      taskGroups: groups.map((g) => ({
-        label: g.label,
-        count: g.items.length,
-        items: g.items.map((t) => {
-          const c = this.color(t.color);
-          return {
-            title: t.title,
-            bar: c.bar,
-            mark: t.done ? '✓' : '',
-            strike: t.done ? 'line-through' : 'none',
-            titleInk: t.done ? '#A6A69C' : '#23231F',
-            checkBg: t.done ? '#2F44C8' : 'transparent',
-            checkBorder: t.done ? '#2F44C8' : '#CFCFC6',
-            range: t.start ? t.start + ' – ' + t.end : '',
-            day: t.date || '',
-            toggle: () => this.toggleDone(t.id),
-            remove: () => this.deleteTask(t.id),
-            assign: (e) => this.patch(t.id, { date: e.target.value || null, start: e.target.value ? t.start : null, end: e.target.value ? t.end : null }),
-          };
-        }),
-      })),
-      dayOptions,
-      modalOpen: s.modalOpen,
-      openNew: () => this.setState({ modalOpen: true, draftTitle: '', draftDay: '', draftStart: '', draftEnd: '', draftColor: 'blue' }),
-      closeModal: () => this.setState({ modalOpen: false }),
-      stop: (e) => e.stopPropagation(),
-      draftTitle: s.draftTitle,
-      draftDay: s.draftDay,
-      draftStart: s.draftStart,
-      draftEnd: s.draftEnd,
-      setDraftTitle: (e) => this.setState({ draftTitle: e.target.value }),
-      setDraftDay: (e) => this.setState({ draftDay: e.target.value }),
-      setDraftStart: (e) => this.setState({ draftStart: e.target.value }),
-      setDraftEnd: (e) => this.setState({ draftEnd: e.target.value }),
-      swatches: Object.keys(this.PALETTE).map((k) => ({
-        bg: this.PALETTE[k].bar,
-        ring: s.draftColor === k ? '#2F44C8' : this.PALETTE[k].bar,
-        pick: () => this.setState({ draftColor: k }),
-      })),
-      submitNew: (e) => {
-        e.preventDefault();
-        if (!s.draftTitle.trim()) return;
-        this.addTask({ title: s.draftTitle.trim(), color: s.draftColor, date: s.draftDay || null, start: s.draftStart || null, end: s.draftStart ? (s.draftEnd || this.fmt(this.mins(s.draftStart) + 60)) : null });
-        this.setState({ modalOpen: false, draftTitle: '' });
-      },
-      quickAdd: (e) => {
-        e.preventDefault();
-        if (!s.draftTitle.trim()) return;
-        this.addTask({ title: s.draftTitle.trim(), color: 'blue' });
-        this.setState({ draftTitle: '' });
-      },
     };
   }
 }
