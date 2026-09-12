@@ -19,13 +19,16 @@
   a:hover { color: #1F2F96; }
   input, button, select, textarea { font: inherit; color: inherit; }
   input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #2F44C8; outline-offset: 1px; }
+  @keyframes sc-spin { to { transform: rotate(360deg); } }
 </style>
 </helmet>
+
+<sc-if value="{{ isAuthenticated }}" hint-placeholder-val="{{ false }}">
 <div style="display:flex; align-items:stretch; min-height:100vh; font-family:Figtree, Helvetica, Arial, sans-serif;">
 
   <aside style="width:232px; flex:0 0 232px; background:#FFFFFF; border-right:1px solid #E7E7E1; padding:22px 16px; display:flex; flex-direction:column; gap:26px;">
     <div style="display:flex; align-items:center; gap:9px; padding:0 6px;">
-      <div style="font-size:17px; font-weight:700; letter-spacing:-0.01em;">Good morning, Sidney</div>
+      <div style="font-size:17px; font-weight:700; letter-spacing:-0.01em;">{{ greeting }}</div>
     </div>
 
     <button onClick="{{ openNew }}" style="align-self:flex-start; display:inline-flex; align-items:center; padding:7px 12px; border:none; border-radius:8px; background:#2F44C8; color:#FFFFFF; font-size:13px; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(31,47,150,0.35);" style-hover="background:#2637A8;">New Task</button>
@@ -44,9 +47,15 @@
         <span style="width:6px; height:6px; border-radius:50%; background:{{ syncColor }};"></span>
         <span>{{ syncStatusText }}</span>
       </div>
-      <div style="display:flex; align-items:center; gap:9px; padding:6px 12px 2px;">
-        <div style="width:24px; height:24px; border-radius:50%; background:#E4DAFB; color:#4A3A7A; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">SN</div>
-        <div style="font-size:13px; color:#4C4C44;">Sidney</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 12px 2px;">
+        <div style="display:flex; align-items:center; gap:9px; min-width:0; flex:1;">
+          <div style="width:28px; height:28px; flex:0 0 28px; border-radius:50%; background:#E4DAFB; color:#4A3A7A; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">{{ userInitials }}</div>
+          <div style="min-width:0; flex:1;">
+            <div style="font-size:13px; font-weight:600; color:#23231F; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ userName }}</div>
+            <div style="font-size:11px; color:#8A8A80; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ userEmail }}</div>
+          </div>
+        </div>
+        <button type="button" onClick="{{ signOut }}" title="Log out" style="border:1px solid #E2E2DB; background:#FFFFFF; color:#5C5C54; cursor:pointer; font-size:12px; font-weight:600; padding:5px 9px; border-radius:7px;" style-hover="background:#FEECEE; color:#CE2C31; border-color:#F8B4B7;">Log out</button>
       </div>
     </div>
   </aside>
@@ -262,8 +271,70 @@
     </div>
   </sc-if>
 </div>
+</sc-if>
 
-</x-dc>
+<sc-if value="{{ isNotAuthenticated }}" hint-placeholder-val="{{ true }}">
+  <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:#F7F7F4; font-family:Figtree, Helvetica, Arial, sans-serif; padding:24px;">
+    <div style="width:100%; max-width:400px; background:#FFFFFF; border:1px solid #E7E7E1; border-radius:18px; padding:32px 28px; box-shadow:0 8px 30px rgba(28,28,24,0.06); display:flex; flex-direction:column; gap:20px;">
+      <div>
+        <div style="font-size:22px; font-weight:700; letter-spacing:-0.02em; color:#23231F;">DoneIt Planner</div>
+        <div style="font-size:13px; color:#8A8A80; margin-top:3px;">Please sign in to access your planner and tasks.</div>
+      </div>
+
+      <div style="display:flex; background:#F4F4F0; padding:3px; border-radius:10px; gap:4px;">
+        <button type="button" onClick="{{ setSignInMode }}" style="flex:1; padding:8px 0; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; background:{{ signInTabBg }}; color:{{ signInTabInk }}; box-shadow:{{ signInTabShadow }};">Sign In</button>
+        <button type="button" onClick="{{ setSignUpMode }}" style="flex:1; padding:8px 0; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; background:{{ signUpTabBg }}; color:{{ signUpTabInk }}; box-shadow:{{ signUpTabShadow }};">Create Account</button>
+      </div>
+
+      <sc-if value="{{ hasAuthError }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FEECEE; border:1px solid #F8B4B7; color:#CE2C31; padding:9px 13px; border-radius:10px; font-size:12.5px; line-height:1.4;">{{ authError }}</div>
+      </sc-if>
+
+      <sc-if value="{{ hasAuthMessage }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#E6F8ED; border:1px solid #B0E7C5; color:#18794E; padding:9px 13px; border-radius:10px; font-size:12.5px; line-height:1.4;">{{ authMessage }}</div>
+      </sc-if>
+
+      <form onSubmit="{{ submitAuth }}" style="display:flex; flex-direction:column; gap:14px;">
+        <sc-if value="{{ isSignUpMode }}" hint-placeholder-val="{{ false }}">
+          <label style="display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:12px; font-weight:600; color:#5C5C54;">Full Name</span>
+            <input type="text" value="{{ authFullName }}" onChange="{{ setAuthFullName }}" placeholder="e.g. Sidney Nduti" style="padding:10px 13px; border:1px solid #E2E2DB; border-radius:10px; font-size:14px;" />
+          </label>
+        </sc-if>
+
+        <label style="display:flex; flex-direction:column; gap:6px;">
+          <span style="font-size:12px; font-weight:600; color:#5C5C54;">Email address</span>
+          <input type="email" required value="{{ authEmail }}" onChange="{{ setAuthEmail }}" placeholder="name@example.com" style="padding:10px 13px; border:1px solid #E2E2DB; border-radius:10px; font-size:14px;" />
+        </label>
+
+        <label style="display:flex; flex-direction:column; gap:6px;">
+          <span style="font-size:12px; font-weight:600; color:#5C5C54;">Password</span>
+          <input type="password" required value="{{ authPassword }}" onChange="{{ setAuthPassword }}" placeholder="••••••••" style="padding:10px 13px; border:1px solid #E2E2DB; border-radius:10px; font-size:14px;" />
+        </label>
+
+        <button type="submit" disabled="{{ authSubmitting }}" style="margin-top:6px; padding:11px 16px; border:none; border-radius:10px; background:#2F44C8; color:#FFFFFF; font-size:14px; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(31,47,150,0.35);" style-hover="background:#2637A8;">{{ authSubmitText }}</button>
+      </form>
+
+      <div style="text-align:center; font-size:12.5px; color:#8A8A80;">
+        <sc-if value="{{ isSignInMode }}" hint-placeholder-val="{{ true }}">
+          <span>Don't have an account? <button type="button" onClick="{{ setSignUpMode }}" style="background:none; border:none; padding:0; color:#2F44C8; font-weight:600; cursor:pointer;">Create one</button></span>
+        </sc-if>
+        <sc-if value="{{ isSignUpMode }}" hint-placeholder-val="{{ false }}">
+          <span>Already have an account? <button type="button" onClick="{{ setSignInMode }}" style="background:none; border:none; padding:0; color:#2F44C8; font-weight:600; cursor:pointer;">Sign in</button></span>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAuthChecking }}" hint-placeholder-val="{{ false }}">
+  <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:#F7F7F4; font-family:Figtree, Helvetica, Arial, sans-serif;">
+    <div style="display:flex; align-items:center; gap:10px; color:#7C7C72; font-size:14px; font-weight:500;">
+      <span style="width:16px; height:16px; border:2px solid #2F44C8; border-top-color:transparent; border-radius:50%; animation:sc-spin 0.8s linear infinite;"></span>
+      <span>Loading DoneIt...</span>
+    </div>
+  </div>
+</sc-if>
 <script type="text/x-dc" data-dc-script data-props="{&quot;showWeekend&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Week view&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;comfortable&quot;,&quot;compact&quot;],&quot;default&quot;:&quot;comfortable&quot;,&quot;tsType&quot;:&quot;'comfortable' | 'compact'&quot;,&quot;section&quot;:&quot;Day view&quot;},&quot;startHour&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:6,&quot;min&quot;:0,&quot;max&quot;:12,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Day view&quot;},&quot;endHour&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:21,&quot;min&quot;:13,&quot;max&quot;:23,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Day view&quot;},&quot;showCompleted&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Tasks&quot;}}">
 const SUPABASE_URL = 'https://oqdkkwchwyurvwpwtsft.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xZGtrd2Nod3l1cnZ3cHd0c2Z0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyMDkxNjAsImV4cCI6MjEwNDc4NTE2MH0.-Hud7OQWGcTV5OUKpRGfkps1eY0I0j0AwqFq8YWOJqY';
@@ -317,6 +388,15 @@ class Component extends DCLogic {
     nextId: 1,
     tasks: [],
     syncStatus: 'connecting',
+    user: null,
+    authChecking: true,
+    authMode: 'signin',
+    authEmail: '',
+    authPassword: '',
+    authFullName: '',
+    authSubmitting: false,
+    authError: '',
+    authMessage: '',
   };
 
   constructor(props) {
@@ -330,13 +410,82 @@ class Component extends DCLogic {
     };
   }
 
+  getUserName(user) {
+    if (!user) return '';
+    return user.user_metadata?.full_name || user.user_metadata?.name || (user.email ? user.email.split('@')[0] : 'User');
+  }
+
+  getUserInitials(name) {
+    if (!name) return 'U';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  }
+
+  getGreeting(name) {
+    const hour = new Date().getHours();
+    let timeGreeting = 'Good morning';
+    if (hour >= 12 && hour < 17) {
+      timeGreeting = 'Good afternoon';
+    } else if (hour >= 17 || hour < 5) {
+      timeGreeting = 'Good evening';
+    }
+    const displayName = name ? name.trim().split(/\s+/)[0] : 'there';
+    return timeGreeting + ', ' + displayName;
+  }
+
   async componentDidMount() {
     const client = getSupabase();
     if (!client) {
-      this.setState({ syncStatus: 'offline' });
+      this.setState({ authChecking: false, syncStatus: 'offline' });
       return;
     }
     try {
+      const { data: { session } } = await client.auth.getSession();
+      if (session?.user) {
+        this.setState({ user: session.user, authChecking: false });
+        await this.loadUserTasks(client);
+        this.subscribeToTasks(client);
+      } else {
+        this.setState({ user: null, authChecking: false, syncStatus: 'offline' });
+      }
+
+      const { data: { subscription } } = client.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          this.setState({ user: session.user, authChecking: false, authError: '', authMessage: '' });
+          await this.loadUserTasks(client);
+          this.subscribeToTasks(client);
+        } else if (event === 'SIGNED_OUT') {
+          if (this.channel) {
+            client.removeChannel(this.channel);
+            this.channel = null;
+          }
+          this.setState({ user: null, tasks: [], authChecking: false, syncStatus: 'offline' });
+          this.saveTasks([]);
+        }
+      });
+      this.authSubscription = subscription;
+    } catch (err) {
+      console.warn('[Supabase] auth init error:', err);
+      this.setState({ authChecking: false });
+    }
+  }
+
+  componentWillUnmount() {
+    const client = getSupabase();
+    if (this.channel && client) {
+      client.removeChannel(this.channel);
+    }
+    if (this.authSubscription) {
+      this.authSubscription.unsubscribe();
+    }
+  }
+
+  async loadUserTasks(client) {
+    try {
+      this.setState({ syncStatus: 'connecting' });
       const { data, error } = await client
         .from('tasks')
         .select('*')
@@ -359,13 +508,40 @@ class Component extends DCLogic {
         console.warn('[Supabase] fetch error:', error);
         this.setState({ syncStatus: 'error' });
       }
+    } catch (err) {
+      console.warn('[Supabase] load tasks error:', err);
+      this.setState({ syncStatus: 'error' });
+    }
+  }
 
-      this.channel = client
-        .channel('public:tasks')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const raw = payload.new;
-            const item = {
+  subscribeToTasks(client) {
+    if (this.channel) {
+      client.removeChannel(this.channel);
+    }
+    this.channel = client
+      .channel('public:tasks')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const raw = payload.new;
+          const item = {
+            id: raw.id,
+            title: raw.title,
+            color: raw.color || 'blue',
+            date: raw.date || null,
+            start: raw.start || null,
+            end: raw.end || null,
+            done: !!raw.done,
+          };
+          this.setState((s) => {
+            if (s.tasks.some((x) => x.id === item.id)) return null;
+            const tasks = s.tasks.concat([item]);
+            this.saveTasks(tasks);
+            return { tasks };
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          const raw = payload.new;
+          this.setState((s) => {
+            const tasks = s.tasks.map((x) => (x.id === raw.id ? {
               id: raw.id,
               title: raw.title,
               color: raw.color || 'blue',
@@ -373,49 +549,108 @@ class Component extends DCLogic {
               start: raw.start || null,
               end: raw.end || null,
               done: !!raw.done,
-            };
-            this.setState((s) => {
-              if (s.tasks.some((x) => x.id === item.id)) return null;
-              const tasks = s.tasks.concat([item]);
-              this.saveTasks(tasks);
-              return { tasks };
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            const raw = payload.new;
-            this.setState((s) => {
-              const tasks = s.tasks.map((x) => (x.id === raw.id ? {
-                id: raw.id,
-                title: raw.title,
-                color: raw.color || 'blue',
-                date: raw.date || null,
-                start: raw.start || null,
-                end: raw.end || null,
-                done: !!raw.done,
-              } : x));
-              this.saveTasks(tasks);
-              return { tasks };
-            });
-          } else if (payload.eventType === 'DELETE') {
-            const oldId = payload.old.id;
-            this.setState((s) => {
-              const tasks = s.tasks.filter((x) => x.id !== oldId);
-              this.saveTasks(tasks);
-              return { tasks };
-            });
-          }
-        })
-        .subscribe();
+            } : x));
+            this.saveTasks(tasks);
+            return { tasks };
+          });
+        } else if (payload.eventType === 'DELETE') {
+          const oldId = payload.old.id;
+          this.setState((s) => {
+            const tasks = s.tasks.filter((x) => x.id !== oldId);
+            this.saveTasks(tasks);
+            return { tasks };
+          });
+        }
+      })
+      .subscribe();
+  }
+
+  async handleSignIn(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const { authEmail, authPassword } = this.state;
+    if (!authEmail.trim() || !authPassword) {
+      this.setState({ authError: 'Please enter both your email and password.' });
+      return;
+    }
+    const client = getSupabase();
+    if (!client) {
+      this.setState({ authError: 'Supabase client is not available.' });
+      return;
+    }
+    this.setState({ authSubmitting: true, authError: '', authMessage: '' });
+    try {
+      const { error } = await client.auth.signInWithPassword({
+        email: authEmail.trim(),
+        password: authPassword,
+      });
+      if (error) {
+        this.setState({ authError: error.message, authSubmitting: false });
+      } else {
+        this.setState({ authSubmitting: false, authError: '', authPassword: '' });
+      }
     } catch (err) {
-      console.warn('[Supabase] setup error:', err);
-      this.setState({ syncStatus: 'error' });
+      this.setState({ authError: err.message || 'Failed to sign in.', authSubmitting: false });
     }
   }
 
-  componentWillUnmount() {
-    const client = getSupabase();
-    if (this.channel && client) {
-      client.removeChannel(this.channel);
+  async handleSignUp(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const { authEmail, authPassword, authFullName } = this.state;
+    if (!authEmail.trim() || !authPassword) {
+      this.setState({ authError: 'Please enter your email and password.' });
+      return;
     }
+    if (authPassword.length < 6) {
+      this.setState({ authError: 'Password must be at least 6 characters.' });
+      return;
+    }
+    const client = getSupabase();
+    if (!client) {
+      this.setState({ authError: 'Supabase client is not available.' });
+      return;
+    }
+    this.setState({ authSubmitting: true, authError: '', authMessage: '' });
+    try {
+      const name = authFullName.trim() || authEmail.trim().split('@')[0];
+      const { data, error } = await client.auth.signUp({
+        email: authEmail.trim(),
+        password: authPassword,
+        options: {
+          data: {
+            full_name: name,
+          },
+        },
+      });
+      if (error) {
+        this.setState({ authError: error.message, authSubmitting: false });
+      } else if (data.session) {
+        this.setState({ authSubmitting: false, authError: '', authPassword: '' });
+      } else {
+        this.setState({
+          authSubmitting: false,
+          authMessage: 'Account created! If confirmation is required, check your email, then sign in.',
+          authMode: 'signin',
+          authPassword: '',
+        });
+      }
+    } catch (err) {
+      this.setState({ authError: err.message || 'Failed to create account.', authSubmitting: false });
+    }
+  }
+
+  async handleSignOut() {
+    const client = getSupabase();
+    if (client) {
+      await client.auth.signOut();
+    }
+    this.setState({
+      user: null,
+      tasks: [],
+      authMode: 'signin',
+      authError: '',
+      authMessage: '',
+    });
+    this.saveTasks([]);
   }
 
   loadTasks() {
@@ -517,8 +752,9 @@ class Component extends DCLogic {
     });
 
     const client = getSupabase();
-    if (client) {
-      client.from('tasks').insert([taskPayload]).select().single().then(({ data, error }) => {
+    if (client && this.state.user) {
+      const dbPayload = { ...taskPayload, user_id: this.state.user.id };
+      client.from('tasks').insert([dbPayload]).select().single().then(({ data, error }) => {
         if (!error && data) {
           this.setState((s) => {
             const tasks = s.tasks.map((t) => (t.id === tempId ? {
@@ -694,6 +930,38 @@ class Component extends DCLogic {
       navItems,
       syncStatusText: s.syncStatus === 'synced' ? 'Supabase Synced' : (s.syncStatus === 'error' ? 'Sync Error' : (s.syncStatus === 'offline' ? 'Offline' : 'Connecting...')),
       syncColor: s.syncStatus === 'synced' ? '#10B981' : (s.syncStatus === 'error' ? '#EF4444' : '#F59E0B'),
+      isAuthenticated: !!s.user,
+      isNotAuthenticated: !s.user && !s.authChecking,
+      isAuthChecking: s.authChecking,
+      greeting: this.getGreeting(this.getUserName(s.user)),
+      userName: this.getUserName(s.user),
+      userEmail: s.user ? (s.user.email || '') : '',
+      userInitials: this.getUserInitials(this.getUserName(s.user)),
+      signOut: () => this.handleSignOut(),
+      authMode: s.authMode,
+      isSignInMode: s.authMode === 'signin',
+      isSignUpMode: s.authMode === 'signup',
+      signInTabBg: s.authMode === 'signin' ? '#FFFFFF' : 'transparent',
+      signInTabInk: s.authMode === 'signin' ? '#23231F' : '#7C7C72',
+      signInTabShadow: s.authMode === 'signin' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+      signUpTabBg: s.authMode === 'signup' ? '#FFFFFF' : 'transparent',
+      signUpTabInk: s.authMode === 'signup' ? '#23231F' : '#7C7C72',
+      signUpTabShadow: s.authMode === 'signup' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+      setSignInMode: () => this.setState({ authMode: 'signin', authError: '', authMessage: '' }),
+      setSignUpMode: () => this.setState({ authMode: 'signup', authError: '', authMessage: '' }),
+      authEmail: s.authEmail,
+      setAuthEmail: (e) => this.setState({ authEmail: e.target.value }),
+      authPassword: s.authPassword,
+      setAuthPassword: (e) => this.setState({ authPassword: e.target.value }),
+      authFullName: s.authFullName,
+      setAuthFullName: (e) => this.setState({ authFullName: e.target.value }),
+      authError: s.authError,
+      hasAuthError: !!s.authError,
+      authMessage: s.authMessage,
+      hasAuthMessage: !!s.authMessage,
+      authSubmitting: s.authSubmitting,
+      authSubmitText: s.authSubmitting ? 'Please wait...' : (s.authMode === 'signup' ? 'Create Account' : 'Sign In'),
+      submitAuth: (e) => (s.authMode === 'signup' ? this.handleSignUp(e) : this.handleSignIn(e)),
       isDay: s.view === 'today',
       isWeek: s.view === 'week',
       isTasks: s.view === 'tasks',
