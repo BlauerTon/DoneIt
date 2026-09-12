@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -38,9 +39,12 @@
       </sc-for>
     </nav>
 
-    <div style="margin-top:auto; display:flex; flex-direction:column; gap:2px; border-top:1px solid #EFEFE9; padding-top:14px;">
-      <div style="padding:8px 12px; font-size:13px; color:#7C7C72;">Settings</div>
-      <div style="display:flex; align-items:center; gap:9px; padding:8px 12px;">
+    <div style="margin-top:auto; display:flex; flex-direction:column; gap:6px; border-top:1px solid #EFEFE9; padding-top:14px;">
+      <div style="display:flex; align-items:center; gap:6px; padding:0 12px; font-size:11.5px; color:{{ syncColor }}; font-weight:500;">
+        <span style="width:6px; height:6px; border-radius:50%; background:{{ syncColor }};"></span>
+        <span>{{ syncStatusText }}</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:9px; padding:6px 12px 2px;">
         <div style="width:24px; height:24px; border-radius:50%; background:#E4DAFB; color:#4A3A7A; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">SN</div>
         <div style="font-size:13px; color:#4C4C44;">Sidney</div>
       </div>
@@ -261,6 +265,19 @@
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;showWeekend&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Week view&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;comfortable&quot;,&quot;compact&quot;],&quot;default&quot;:&quot;comfortable&quot;,&quot;tsType&quot;:&quot;'comfortable' | 'compact'&quot;,&quot;section&quot;:&quot;Day view&quot;},&quot;startHour&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:6,&quot;min&quot;:0,&quot;max&quot;:12,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Day view&quot;},&quot;endHour&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:21,&quot;min&quot;:13,&quot;max&quot;:23,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Day view&quot;},&quot;showCompleted&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Tasks&quot;}}">
+const SUPABASE_URL = 'https://oqdkkwchwyurvwpwtsft.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xZGtrd2Nod3l1cnZ3cHd0c2Z0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyMDkxNjAsImV4cCI6MjEwNDc4NTE2MH0.-Hud7OQWGcTV5OUKpRGfkps1eY0I0j0AwqFq8YWOJqY';
+
+function getSupabase() {
+  if (typeof window !== 'undefined' && window.supabase && window.supabase.createClient) {
+    if (!window._supabaseClient) {
+      window._supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+    return window._supabaseClient;
+  }
+  return null;
+}
+
 class Component extends DCLogic {
   PALETTE = {
     blue:   { bg: '#C3D8FF', bar: '#4F7FE8', ink: '#1B3573' },
@@ -299,6 +316,7 @@ class Component extends DCLogic {
     dragId: null,
     nextId: 1,
     tasks: [],
+    syncStatus: 'connecting',
   };
 
   constructor(props) {
@@ -310,6 +328,94 @@ class Component extends DCLogic {
       tasks: saved,
       nextId: maxId + 1,
     };
+  }
+
+  async componentDidMount() {
+    const client = getSupabase();
+    if (!client) {
+      this.setState({ syncStatus: 'offline' });
+      return;
+    }
+    try {
+      const { data, error } = await client
+        .from('tasks')
+        .select('*')
+        .order('id', { ascending: true });
+
+      if (!error && Array.isArray(data)) {
+        const tasks = data.map((t) => ({
+          id: t.id,
+          title: t.title,
+          color: t.color || 'blue',
+          date: t.date || null,
+          start: t.start || null,
+          end: t.end || null,
+          done: !!t.done,
+        }));
+        const maxId = tasks.reduce((m, t) => Math.max(m, t.id || 0), 0);
+        this.setState({ tasks, nextId: maxId + 1, syncStatus: 'synced' });
+        this.saveTasks(tasks);
+      } else {
+        console.warn('[Supabase] fetch error:', error);
+        this.setState({ syncStatus: 'error' });
+      }
+
+      this.channel = client
+        .channel('public:tasks')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const raw = payload.new;
+            const item = {
+              id: raw.id,
+              title: raw.title,
+              color: raw.color || 'blue',
+              date: raw.date || null,
+              start: raw.start || null,
+              end: raw.end || null,
+              done: !!raw.done,
+            };
+            this.setState((s) => {
+              if (s.tasks.some((x) => x.id === item.id)) return null;
+              const tasks = s.tasks.concat([item]);
+              this.saveTasks(tasks);
+              return { tasks };
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const raw = payload.new;
+            this.setState((s) => {
+              const tasks = s.tasks.map((x) => (x.id === raw.id ? {
+                id: raw.id,
+                title: raw.title,
+                color: raw.color || 'blue',
+                date: raw.date || null,
+                start: raw.start || null,
+                end: raw.end || null,
+                done: !!raw.done,
+              } : x));
+              this.saveTasks(tasks);
+              return { tasks };
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldId = payload.old.id;
+            this.setState((s) => {
+              const tasks = s.tasks.filter((x) => x.id !== oldId);
+              this.saveTasks(tasks);
+              return { tasks };
+            });
+          }
+        })
+        .subscribe();
+    } catch (err) {
+      console.warn('[Supabase] setup error:', err);
+      this.setState({ syncStatus: 'error' });
+    }
+  }
+
+  componentWillUnmount() {
+    const client = getSupabase();
+    if (this.channel && client) {
+      client.removeChannel(this.channel);
+    }
   }
 
   loadTasks() {
@@ -367,32 +473,71 @@ class Component extends DCLogic {
       this.saveTasks(tasks);
       return { tasks };
     });
+    const client = getSupabase();
+    if (client) {
+      client.from('tasks').update(fields).eq('id', id).then(({ error }) => {
+        if (error) console.warn('[Supabase] update error:', error);
+      });
+    }
   }
   toggleDone(id) {
+    let nextDone = false;
     this.setState((s) => {
-      const tasks = s.tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+      const tasks = s.tasks.map((t) => {
+        if (t.id === id) {
+          nextDone = !t.done;
+          return { ...t, done: nextDone };
+        }
+        return t;
+      });
       this.saveTasks(tasks);
       return { tasks };
     });
+    const client = getSupabase();
+    if (client) {
+      client.from('tasks').update({ done: nextDone }).eq('id', id).then(({ error }) => {
+        if (error) console.warn('[Supabase] toggle error:', error);
+      });
+    }
   }
   addTask(fields) {
+    const tempId = Date.now();
+    const taskPayload = {
+      title: fields.title,
+      color: fields.color || 'blue',
+      date: fields.date || null,
+      start: fields.start || null,
+      end: fields.end || null,
+      done: false,
+    };
     this.setState((s) => {
-      const newTask = {
-        id: s.nextId,
-        title: fields.title,
-        color: fields.color || 'blue',
-        date: fields.date || null,
-        start: fields.start || null,
-        end: fields.end || null,
-        done: false,
-      };
-      const tasks = s.tasks.concat([newTask]);
+      const tasks = s.tasks.concat([{ id: tempId, ...taskPayload }]);
       this.saveTasks(tasks);
-      return {
-        nextId: s.nextId + 1,
-        tasks,
-      };
+      return { tasks };
     });
+
+    const client = getSupabase();
+    if (client) {
+      client.from('tasks').insert([taskPayload]).select().single().then(({ data, error }) => {
+        if (!error && data) {
+          this.setState((s) => {
+            const tasks = s.tasks.map((t) => (t.id === tempId ? {
+              id: data.id,
+              title: data.title,
+              color: data.color || 'blue',
+              date: data.date || null,
+              start: data.start || null,
+              end: data.end || null,
+              done: !!data.done,
+            } : t));
+            this.saveTasks(tasks);
+            return { tasks };
+          });
+        } else if (error) {
+          console.warn('[Supabase] insert error:', error);
+        }
+      });
+    }
   }
   deleteTask(id) {
     this.setState((s) => {
@@ -400,6 +545,12 @@ class Component extends DCLogic {
       this.saveTasks(tasks);
       return { tasks };
     });
+    const client = getSupabase();
+    if (client) {
+      client.from('tasks').delete().eq('id', id).then(({ error }) => {
+        if (error) console.warn('[Supabase] delete error:', error);
+      });
+    }
   }
   dragStart(id) {
     return (e) => {
@@ -541,6 +692,8 @@ class Component extends DCLogic {
 
     return {
       navItems,
+      syncStatusText: s.syncStatus === 'synced' ? 'Supabase Synced' : (s.syncStatus === 'error' ? 'Sync Error' : (s.syncStatus === 'offline' ? 'Offline' : 'Connecting...')),
+      syncColor: s.syncStatus === 'synced' ? '#10B981' : (s.syncStatus === 'error' ? '#EF4444' : '#F59E0B'),
       isDay: s.view === 'today',
       isWeek: s.view === 'week',
       isTasks: s.view === 'tasks',
