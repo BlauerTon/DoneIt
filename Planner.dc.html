@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #F7F7F4; color: #23231F; -webkit-font-smoothing: antialiased; }
+  a { color: #2F44C8; }
+  a:hover { color: #1F2F96; }
+  input, button, select, textarea { font: inherit; color: inherit; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #2F44C8; outline-offset: 1px; }
+</style>
+</helmet>
+<div style="display:flex; align-items:stretch; min-height:100vh; font-family:Figtree, Helvetica, Arial, sans-serif;">
+
+  <aside style="width:232px; flex:0 0 232px; background:#FFFFFF; border-right:1px solid #E7E7E1; padding:22px 16px; display:flex; flex-direction:column; gap:26px;">
+    <div style="display:flex; align-items:center; gap:9px; padding:0 6px;">
+      <div style="font-size:17px; font-weight:700; letter-spacing:-0.01em;">Good morning, Sidney</div>
+    </div>
+
+    <button onClick="{{ openNew }}" style="align-self:flex-start; display:inline-flex; align-items:center; padding:7px 12px; border:none; border-radius:8px; background:#2F44C8; color:#FFFFFF; font-size:13px; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(31,47,150,0.35);" style-hover="background:#2637A8;">New Task</button>
+
+    <nav style="display:flex; flex-direction:column; gap:2px;">
+      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="3">
+        <button onClick="{{ n.go }}" style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 12px; border:none; border-radius:9px; background:{{ n.bg }}; color:{{ n.ink }}; font-size:14px; font-weight:{{ n.weight }}; text-align:left; cursor:pointer;" style-hover="background:#F1F1EC;">
+          <span>{{ n.label }}</span>
+          <span style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:#9A9A90;">{{ n.count }}</span>
+        </button>
+      </sc-for>
+    </nav>
+
+    <div style="margin-top:auto; display:flex; flex-direction:column; gap:2px; border-top:1px solid #EFEFE9; padding-top:14px;">
+      <div style="padding:8px 12px; font-size:13px; color:#7C7C72;">Settings</div>
+      <div style="display:flex; align-items:center; gap:9px; padding:8px 12px;">
+        <div style="width:24px; height:24px; border-radius:50%; background:#E4DAFB; color:#4A3A7A; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">JD</div>
+        <div style="font-size:13px; color:#4C4C44;">Jordan Dey</div>
+      </div>
+    </div>
+  </aside>
+
+  <main style="flex:1; min-width:0; display:flex; flex-direction:column;">
+
+    <sc-if value="{{ isDay }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; flex-direction:column; min-height:0;">
+        <header style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:22px 30px 16px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <button onClick="{{ prevDay }}" style="width:32px; height:32px; border:1px solid #E2E2DB; border-radius:9px; background:#FFFFFF; cursor:pointer; color:#5C5C54;" style-hover="border-color:#C9C9C0;">‹</button>
+            <div>
+              <div style="font-size:22px; font-weight:700; letter-spacing:-0.02em;">{{ dayTitle }}</div>
+              <div style="font-size:13px; color:#8A8A80; margin-top:2px;">{{ daySummary }}</div>
+            </div>
+            <button onClick="{{ nextDay }}" style="width:32px; height:32px; border:1px solid #E2E2DB; border-radius:9px; background:#FFFFFF; cursor:pointer; color:#5C5C54;" style-hover="border-color:#C9C9C0;">›</button>
+          </div>
+          <button onClick="{{ goToday }}" style="padding:8px 14px; border:1px solid #D5DAF5; border-radius:9px; background:#FFFFFF; color:#2F44C8; font-size:13px; font-weight:600; cursor:pointer;" style-hover="background:#F2F4FF;">Today</button>
+        </header>
+
+        <div style="display:flex; align-items:flex-start; gap:24px; padding:4px 30px 40px; flex-wrap:wrap;">
+          <section style="flex:1 1 460px; min-width:0; background:#FFFFFF; border:1px solid #E7E7E1; border-radius:14px; padding:14px 18px 18px;">
+            <div style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.12em; color:#9A9A90; padding-bottom:10px;">SCHEDULE</div>
+            <div style="position:relative;">
+              <sc-for list="{{ hours }}" as="h" hint-placeholder-count="12">
+                <div onClick="{{ h.create }}" onDragOver="{{ h.over }}" onDrop="{{ h.drop }}" style="display:flex; align-items:flex-start; gap:12px; height:{{ h.height }}px; border-top:1px solid #EFEFE9; cursor:copy;" style-hover="background:#FAFAF7;">
+                  <span style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:#A6A69C; width:42px; flex:0 0 42px; padding-top:4px;">{{ h.label }}</span>
+                </div>
+              </sc-for>
+              <div style="position:absolute; inset:0 0 0 54px; pointer-events:none;">
+                <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="3">
+                  <div draggable="true" onDragStart="{{ b.dragStart }}" onClick="{{ b.toggle }}" style="position:absolute; left:0; right:6px; top:{{ b.top }}px; height:{{ b.height }}px; pointer-events:auto; display:flex; align-items:flex-start; gap:9px; padding:8px 11px; border-radius:9px; background:{{ b.bg }}; border-left:3px solid {{ b.bar }}; opacity:{{ b.opacity }}; cursor:grab; overflow:hidden;">
+                    <span style="font-size:12px; color:{{ b.ink }}; font-weight:700; line-height:1.3;">{{ b.mark }}</span>
+                    <span style="min-width:0;">
+                      <span style="display:block; font-size:13.5px; font-weight:600; color:{{ b.ink }}; text-decoration:{{ b.strike }}; line-height:1.3;">{{ b.title }}</span>
+                      <span style="display:block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:{{ b.ink }}; opacity:0.75; margin-top:2px;">{{ b.range }}</span>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </section>
+
+          <section style="flex:0 1 300px; min-width:260px; display:flex; flex-direction:column; gap:10px;">
+            <div style="background:#FFFFFF; border:1px solid #E7E7E1; border-radius:14px; padding:16px 18px;">
+              <div style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.12em; color:#9A9A90; padding-bottom:4px;">UNSCHEDULED</div>
+              <div style="font-size:12px; color:#8A8A80; padding-bottom:12px;">Drag onto a time slot to schedule.</div>
+              <div style="display:flex; flex-direction:column; gap:7px;">
+                <sc-for list="{{ unscheduled }}" as="t" hint-placeholder-count="3">
+                  <div draggable="true" onDragStart="{{ t.dragStart }}" style="display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:9px; background:{{ t.bg }}; border-left:3px solid {{ t.bar }}; cursor:grab;">
+                    <button onClick="{{ t.toggle }}" style="width:15px; height:15px; flex:0 0 15px; border:1.5px solid {{ t.ink }}; border-radius:4px; background:transparent; cursor:pointer; padding:0; font-size:10px; line-height:1; color:{{ t.ink }};">{{ t.mark }}</button>
+                    <span style="font-size:13.5px; font-weight:500; color:{{ t.ink }}; text-decoration:{{ t.strike }};">{{ t.title }}</span>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ noUnscheduled }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:13px; color:#A6A69C; padding:4px 0 2px;">Nothing waiting. Day is fully planned.</div>
+                </sc-if>
+              </div>
+            </div>
+
+            <div style="background:#FFFFFF; border:1px solid #E7E7E1; border-radius:14px; padding:16px 18px;">
+              <div style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.12em; color:#9A9A90; padding-bottom:10px;">NEXT UP</div>
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <sc-for list="{{ lookahead }}" as="d" hint-placeholder-count="2">
+                  <div>
+                    <div style="font-size:12.5px; font-weight:600; color:#4C4C44; padding-bottom:6px;">{{ d.label }}</div>
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                      <sc-for list="{{ d.items }}" as="i" hint-placeholder-count="2">
+                        <div style="display:flex; align-items:center; gap:9px;">
+                          <span style="width:7px; height:7px; border-radius:50%; background:{{ i.bar }};"></span>
+                          <span style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:#9A9A90; width:40px;">{{ i.time }}</span>
+                          <span style="font-size:13px; color:#3C3C36;">{{ i.title }}</span>
+                        </div>
+                      </sc-for>
+                      <div style="font-size:11.5px; color:#A6A69C;">{{ d.extra }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isWeek }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <header style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; padding:22px 30px 18px;">
+          <div>
+            <div style="font-size:22px; font-weight:700; letter-spacing:-0.02em;">{{ weekTitle }}</div>
+            <div style="font-size:13px; color:#8A8A80; margin-top:2px;">Drag a task onto a day to assign it.</div>
+          </div>
+          <button onClick="{{ openNew }}" style="padding:9px 14px; border:none; border-radius:9px; background:#2F44C8; color:#FFFFFF; font-size:13px; font-weight:600; cursor:pointer;" style-hover="background:#2637A8;">+ New Task</button>
+        </header>
+        <div style="display:flex; gap:10px; padding:0 30px 24px; align-items:stretch; overflow-x:auto;">
+          <div style="flex:0 0 218px; background:#FFFFFF; border:1px dashed #D8D8D0; border-radius:13px; padding:14px;" onDragOver="{{ overDay }}" onDrop="{{ dropUnassign }}">
+            <div style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.1em; color:#9A9A90;">UNASSIGNED</div>
+            <div style="font-size:12px; color:#A6A69C; padding:4px 0 12px;">{{ unassignedCount }}</div>
+            <div style="display:flex; flex-direction:column; gap:7px;">
+              <sc-for list="{{ unassigned }}" as="t" hint-placeholder-count="4">
+                <div draggable="true" onDragStart="{{ t.dragStart }}" style="padding:9px 11px; border-radius:9px; background:{{ t.bg }}; border-left:3px solid {{ t.bar }}; font-size:13px; font-weight:500; color:{{ t.ink }}; cursor:grab;">{{ t.title }}</div>
+              </sc-for>
+            </div>
+          </div>
+          <sc-for list="{{ weekDays }}" as="d" hint-placeholder-count="7">
+            <div onDragOver="{{ d.over }}" onDrop="{{ d.drop }}" style="flex:1 1 150px; min-width:150px; background:{{ d.bg }}; border:1px solid {{ d.border }}; border-radius:13px; padding:14px 12px; display:flex; flex-direction:column;">
+              <button onClick="{{ d.open }}" style="display:flex; align-items:baseline; gap:7px; border:none; background:transparent; padding:0; cursor:pointer; text-align:left;">
+                <span style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.1em; color:#8A8A80;">{{ d.dow }}</span>
+                <span style="font-size:15px; font-weight:700; color:{{ d.ink }};">{{ d.num }}</span>
+              </button>
+              <div style="font-size:11.5px; color:#A6A69C; padding:5px 0 12px;">{{ d.count }}</div>
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <sc-for list="{{ d.items }}" as="t" hint-placeholder-count="3">
+                  <div draggable="true" onDragStart="{{ t.dragStart }}" style="padding:8px 10px; border-radius:8px; background:{{ t.bg }}; border-left:3px solid {{ t.bar }}; cursor:grab; opacity:{{ t.opacity }};">
+                    <div style="font-size:12.5px; font-weight:600; color:{{ t.ink }}; text-decoration:{{ t.strike }}; line-height:1.35;">{{ t.title }}</div>
+                    <div style="font-family:'IBM Plex Mono', monospace; font-size:10px; color:{{ t.ink }}; opacity:0.75; margin-top:2px;">{{ t.range }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isTasks }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:760px; padding:22px 30px 48px;">
+        <header style="padding-bottom:20px;">
+          <div style="font-size:22px; font-weight:700; letter-spacing:-0.02em;">Tasks</div>
+          <div style="font-size:13px; color:#8A8A80; margin-top:2px;">{{ tasksSummary }}</div>
+        </header>
+        <form onSubmit="{{ quickAdd }}" style="display:flex; gap:8px; padding-bottom:22px;">
+          <input value="{{ draftTitle }}" onChange="{{ setDraftTitle }}" placeholder="What do you need to do?" style="flex:1; min-width:0; padding:11px 14px; border:1px solid #E2E2DB; border-radius:10px; background:#FFFFFF; font-size:14px;" />
+          <button type="submit" style="padding:11px 18px; border:none; border-radius:10px; background:#2F44C8; color:#FFFFFF; font-size:14px; font-weight:600; cursor:pointer;" style-hover="background:#2637A8;">Add</button>
+        </form>
+        <div style="display:flex; flex-direction:column; gap:26px;">
+          <sc-for list="{{ taskGroups }}" as="g" hint-placeholder-count="4">
+            <section>
+              <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #E7E7E1; padding-bottom:7px; margin-bottom:10px;">
+                <span style="font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.12em; color:#9A9A90;">{{ g.label }}</span>
+                <span style="font-family:'IBM Plex Mono', monospace; font-size:10px; color:#BDBDB4;">{{ g.count }}</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:4px;">
+                <sc-for list="{{ g.items }}" as="t" hint-placeholder-count="3">
+                  <div style="display:flex; align-items:center; gap:12px; padding:9px 12px; border-radius:10px; background:#FFFFFF; border:1px solid #EDEDE7;">
+                    <button onClick="{{ t.toggle }}" style="width:17px; height:17px; flex:0 0 17px; border:1.5px solid {{ t.checkBorder }}; border-radius:5px; background:{{ t.checkBg }}; color:#FFFFFF; font-size:10px; line-height:1; padding:0; cursor:pointer;">{{ t.mark }}</button>
+                    <span style="width:8px; height:8px; flex:0 0 8px; border-radius:50%; background:{{ t.bar }};"></span>
+                    <span style="flex:1; min-width:0; font-size:14px; color:{{ t.titleInk }}; text-decoration:{{ t.strike }};">{{ t.title }}</span>
+                    <span style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:#A6A69C;">{{ t.range }}</span>
+                    <select value="{{ t.day }}" onChange="{{ t.assign }}" style="padding:6px 8px; border:1px solid #E2E2DB; border-radius:8px; background:#FBFBF9; font-size:12px; color:#4C4C44; cursor:pointer;">
+                      <sc-for list="{{ dayOptions }}" as="o" hint-placeholder-count="8">
+                        <option value="{{ o.value }}">{{ o.label }}</option>
+                      </sc-for>
+                    </select>
+                  </div>
+                </sc-for>
+              </div>
+            </section>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+  </main>
+
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeModal }}" style="position:fixed; inset:0; background:rgba(28,28,24,0.34); display:flex; align-items:center; justify-content:center; padding:24px; z-index:40;">
+      <form onSubmit="{{ submitNew }}" onClick="{{ stop }}" style="width:100%; max-width:392px; background:#FFFFFF; border-radius:16px; padding:24px; box-shadow:0 18px 44px rgba(28,28,24,0.22); display:flex; flex-direction:column; gap:18px;">
+        <div>
+          <div style="font-size:17px; font-weight:700; letter-spacing:-0.01em;">New task</div>
+          <div style="font-size:12.5px; color:#8A8A80; margin-top:2px;">Day and time are optional.</div>
+        </div>
+        <label style="display:flex; flex-direction:column; gap:6px;">
+          <span style="font-size:12px; font-weight:600; color:#5C5C54;">What do you need to do?</span>
+          <input value="{{ draftTitle }}" onChange="{{ setDraftTitle }}" placeholder="Take a Run" style="padding:11px 13px; border:1px solid #E2E2DB; border-radius:10px; font-size:14px;" />
+        </label>
+        <div style="display:flex; gap:10px;">
+          <label style="flex:1; min-width:0; display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:12px; font-weight:600; color:#5C5C54;">Day</span>
+            <select value="{{ draftDay }}" onChange="{{ setDraftDay }}" style="width:100%; min-width:0; padding:10px 11px; border:1px solid #E2E2DB; border-radius:10px; font-size:13px; background:#FBFBF9;">
+              <sc-for list="{{ dayOptions }}" as="o" hint-placeholder-count="8">
+                <option value="{{ o.value }}">{{ o.label }}</option>
+              </sc-for>
+            </select>
+          </label>
+          <label style="flex:0 0 88px; min-width:0; display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:12px; font-weight:600; color:#5C5C54;">Start</span>
+            <input value="{{ draftStart }}" onChange="{{ setDraftStart }}" placeholder="--:--" size="5" style="width:100%; min-width:0; padding:10px 11px; border:1px solid #E2E2DB; border-radius:10px; font-size:13px; font-family:'IBM Plex Mono', monospace;" />
+          </label>
+          <label style="flex:0 0 88px; min-width:0; display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:12px; font-weight:600; color:#5C5C54;">End</span>
+            <input value="{{ draftEnd }}" onChange="{{ setDraftEnd }}" placeholder="--:--" size="5" style="width:100%; min-width:0; padding:10px 11px; border:1px solid #E2E2DB; border-radius:10px; font-size:13px; font-family:'IBM Plex Mono', monospace;" />
+          </label>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <span style="font-size:12px; font-weight:600; color:#5C5C54;">Color</span>
+          <div style="display:flex; gap:8px;">
+            <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="6">
+              <button type="button" onClick="{{ s.pick }}" style="width:28px; height:28px; border-radius:50%; background:{{ s.bg }}; border:2px solid {{ s.ring }}; cursor:pointer; padding:0;"></button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex; gap:9px; justify-content:flex-end; padding-top:2px;">
+          <button type="button" onClick="{{ closeModal }}" style="padding:10px 15px; border:1px solid #E2E2DB; border-radius:10px; background:#FFFFFF; font-size:13.5px; font-weight:600; color:#5C5C54; cursor:pointer;" style-hover="background:#F7F7F4;">Cancel</button>
+          <button type="submit" style="padding:10px 18px; border:none; border-radius:10px; background:#2F44C8; color:#FFFFFF; font-size:13.5px; font-weight:600; cursor:pointer;" style-hover="background:#2637A8;">Add Task</button>
+        </div>
+      </form>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showWeekend&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Week view&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;comfortable&quot;,&quot;compact&quot;],&quot;default&quot;:&quot;comfortable&quot;,&quot;tsType&quot;:&quot;'comfortable' | 'compact'&quot;,&quot;section&quot;:&quot;Day view&quot;},&quot;startHour&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:6,&quot;min&quot;:0,&quot;max&quot;:12,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Day view&quot;},&quot;endHour&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:21,&quot;min&quot;:13,&quot;max&quot;:23,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Day view&quot;},&quot;showCompleted&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Tasks&quot;}}">
+class Component extends DCLogic {
+  PALETTE = {
+    blue:   { bg: '#C3D8FF', bar: '#4F7FE8', ink: '#1B3573' },
+    green:  { bg: '#BFEBCF', bar: '#3FB177', ink: '#144F38' },
+    yellow: { bg: '#FBEBA4', bar: '#E5BA1E', ink: '#57470B' },
+    orange: { bg: '#FED2AE', bar: '#F28B32', ink: '#6B3A13' },
+    purple: { bg: '#DCCBFF', bar: '#8A6BE2', ink: '#3B2A69' },
+    pink:   { bg: '#FFC9DC', bar: '#E56096', ink: '#68203E' },
+  };
+  DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  DOWFULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  MONTH = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  TODAY = '2026-09-14';
+  WEEK_START = '2026-09-14';
+
+  state = {
+    view: 'today',
+    date: '2026-09-14',
+    modalOpen: false,
+    draftTitle: '',
+    draftDay: '',
+    draftStart: '',
+    draftEnd: '',
+    draftColor: 'blue',
+    dragId: null,
+    nextId: 100,
+    tasks: [
+      { id: 1, title: 'Morning Run', color: 'green', date: '2026-09-14', start: '06:00', end: '07:00', done: true },
+      { id: 2, title: 'Build ATS automation', color: 'blue', date: '2026-09-14', start: '08:00', end: '10:30', done: false },
+      { id: 3, title: 'Study German', color: 'purple', date: '2026-09-14', start: '11:00', end: '12:00', done: false },
+      { id: 4, title: 'Lunch', color: 'yellow', date: '2026-09-14', start: '13:00', end: '13:45', done: false },
+      { id: 5, title: 'Gym', color: 'orange', date: '2026-09-14', start: '17:30', end: '18:30', done: false },
+      { id: 6, title: 'Read documentation', color: 'blue', date: '2026-09-14', start: null, end: null, done: false },
+      { id: 7, title: 'Review notes', color: 'pink', date: '2026-09-14', start: null, end: null, done: false },
+      { id: 8, title: 'Client work', color: 'blue', date: '2026-09-15', start: '09:00', end: '12:00', done: false },
+      { id: 9, title: 'Top Wellness website', color: 'purple', date: '2026-09-15', start: '14:00', end: '16:00', done: false },
+      { id: 10, title: 'Take a Run', color: 'green', date: '2026-09-16', start: '06:00', end: '07:00', done: false },
+      { id: 11, title: 'Website development', color: 'blue', date: '2026-09-16', start: null, end: null, done: false },
+      { id: 12, title: 'Study German', color: 'purple', date: '2026-09-16', start: '19:00', end: '20:00', done: false },
+      { id: 13, title: 'Portfolio review', color: 'orange', date: '2026-09-17', start: '10:00', end: '11:00', done: false },
+      { id: 14, title: 'Finish portfolio', color: 'pink', date: '2026-09-18', start: null, end: null, done: false },
+      { id: 15, title: 'Clean workspace', color: 'yellow', date: null, start: null, end: null, done: false },
+      { id: 16, title: 'Plan next sprint', color: 'blue', date: null, start: null, end: null, done: false },
+      { id: 17, title: 'Call the dentist', color: 'pink', date: null, start: null, end: null, done: false },
+    ],
+  };
+
+  // --- date helpers -------------------------------------------------
+  parse(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); }
+  iso(d) {
+    const p = (n) => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+  shift(iso, n) { const d = this.parse(iso); d.setDate(d.getDate() + n); return this.iso(d); }
+  longLabel(iso) {
+    const d = this.parse(iso);
+    return this.DOWFULL[d.getDay()] + ', ' + this.MONTH[d.getMonth()] + ' ' + d.getDate();
+  }
+  mins(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
+  fmt(m) {
+    const p = (n) => String(n).padStart(2, '0');
+    return p(Math.floor(m / 60) % 24) + ':' + p(m % 60);
+  }
+  color(k) { return this.PALETTE[k] || this.PALETTE.blue; }
+
+  get hourHeight() { return (this.props.density || 'comfortable') === 'compact' ? 52 : 70; }
+  get startHour() { return this.props.startHour ?? 6; }
+  get endHour() { return this.props.endHour ?? 21; }
+
+  visible(list) {
+    return (this.props.showCompleted ?? true) ? list : list.filter((t) => !t.done);
+  }
+  forDate(iso) { return this.visible(this.state.tasks.filter((t) => t.date === iso)); }
+
+  // --- mutations ----------------------------------------------------
+  patch(id, fields) {
+    this.setState((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...fields } : t)) }));
+  }
+  toggleDone(id) {
+    this.setState((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t)) }));
+  }
+  addTask(fields) {
+    this.setState((s) => ({
+      nextId: s.nextId + 1,
+      tasks: s.tasks.concat([{ id: s.nextId, title: fields.title, color: fields.color || 'blue', date: fields.date || null, start: fields.start || null, end: fields.end || null, done: false }]),
+    }));
+  }
+  dragStart(id) {
+    return (e) => {
+      if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(id)); } catch (_) {} }
+      this.setState({ dragId: id });
+    };
+  }
+  allowDrop = (e) => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; };
+
+  taskChip(t, opts) {
+    const c = this.color(t.color);
+    return {
+      id: t.id,
+      title: t.title,
+      bg: c.bg, bar: c.bar, ink: c.ink,
+      mark: t.done ? '✓' : '',
+      strike: t.done ? 'line-through' : 'none',
+      opacity: t.done ? '0.55' : '1',
+      range: t.start ? t.start + ' – ' + t.end : (opts && opts.blankRange ? '' : 'Unscheduled'),
+      toggle: () => this.toggleDone(t.id),
+      dragStart: this.dragStart(t.id),
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const hh = this.hourHeight;
+    const startMin = this.startHour * 60;
+    const dayTasks = this.forDate(s.date);
+    const scheduled = dayTasks.filter((t) => t.start).sort((a, b) => this.mins(a.start) - this.mins(b.start));
+    const unscheduled = dayTasks.filter((t) => !t.start);
+
+    const hours = [];
+    for (let h = this.startHour; h <= this.endHour; h++) {
+      const label = String(h).padStart(2, '0') + ':00';
+      hours.push({
+        label, height: hh,
+        over: this.allowDrop,
+        create: () => this.setState({ modalOpen: true, draftTitle: '', draftDay: s.date, draftStart: label, draftEnd: String(h + 1).padStart(2, '0') + ':00', draftColor: 'blue' }),
+        drop: (e) => {
+          e.preventDefault();
+          const id = s.dragId;
+          if (id == null) return;
+          const t = s.tasks.find((x) => x.id === id);
+          const dur = t && t.start ? this.mins(t.end) - this.mins(t.start) : 60;
+          this.patch(id, { date: s.date, start: label, end: this.fmt(h * 60 + dur) });
+          this.setState({ dragId: null });
+        },
+      });
+    }
+
+    const blocks = scheduled.map((t) => {
+      const top = ((this.mins(t.start) - startMin) / 60) * hh;
+      const height = Math.max(34, ((this.mins(t.end) - this.mins(t.start)) / 60) * hh - 4);
+      const chip = this.taskChip(t);
+      return { ...chip, top: Math.max(0, top), height, mark: t.done ? '✓' : '·' };
+    });
+
+    const strip = [];
+    for (let i = -1; i < 6; i++) {
+      const iso = this.shift(this.TODAY, i);
+      const active = iso === s.date;
+      const n = this.forDate(iso).length;
+      strip.push({
+        dow: iso === this.TODAY ? 'TODAY' : this.DOW[this.parse(iso).getDay()],
+        num: this.parse(iso).getDate(),
+        count: n === 1 ? '1 task' : n + ' tasks',
+        bg: active ? '#EEF1FF' : '#FFFFFF',
+        border: active ? '#2F44C8' : '#E7E7E1',
+        ink: active ? '#2F44C8' : '#23231F',
+        go: () => this.setState({ view: 'today', date: iso }),
+      });
+    }
+
+    const lookahead = [1, 2].map((n) => {
+      const iso = this.shift(s.date, n);
+      const list = this.forDate(iso);
+      const timed = list.filter((t) => t.start).sort((a, b) => this.mins(a.start) - this.mins(b.start)).slice(0, 3);
+      const rest = list.length - timed.length;
+      return {
+        label: n === 1 ? 'Tomorrow' : this.DOWFULL[this.parse(iso).getDay()],
+        items: timed.map((t) => ({ time: t.start, title: t.title, bar: this.color(t.color).bar })),
+        extra: rest > 0 ? rest + (rest === 1 ? ' unscheduled task' : ' unscheduled tasks') : (timed.length ? '' : 'Nothing planned yet'),
+      };
+    });
+
+    const weekLen = (this.props.showWeekend ?? true) ? 7 : 5;
+    const weekDays = [];
+    for (let i = 0; i < weekLen; i++) {
+      const iso = this.shift(this.WEEK_START, i);
+      const list = this.forDate(iso);
+      const active = iso === this.TODAY;
+      weekDays.push({
+        dow: this.DOW[this.parse(iso).getDay()],
+        num: this.parse(iso).getDate(),
+        count: list.length === 1 ? '1 task' : list.length + ' tasks',
+        bg: active ? '#FFFFFF' : '#FCFCFA',
+        border: active ? '#2F44C8' : '#E7E7E1',
+        ink: active ? '#2F44C8' : '#23231F',
+        items: list.map((t) => this.taskChip(t, { blankRange: false })),
+        open: () => this.setState({ view: 'today', date: iso }),
+        over: this.allowDrop,
+        drop: (e) => { e.preventDefault(); if (s.dragId != null) { this.patch(s.dragId, { date: iso, start: null, end: null }); this.setState({ dragId: null }); } },
+      });
+    }
+
+    const unassignedList = this.visible(s.tasks.filter((t) => !t.date));
+    const weekEndIso = this.shift(this.WEEK_START, 6);
+
+    const groups = [{ label: 'UNASSIGNED', items: unassignedList }];
+    for (let i = 0; i < 7; i++) {
+      const iso = this.shift(this.WEEK_START, i);
+      const list = this.forDate(iso);
+      if (list.length) groups.push({ label: this.DOWFULL[this.parse(iso).getDay()].toUpperCase(), items: list, iso });
+    }
+
+    const dayOptions = [{ value: '', label: 'Unassigned' }].concat(
+      [0, 1, 2, 3, 4, 5, 6].map((i) => {
+        const iso = this.shift(this.WEEK_START, i);
+        return { value: iso, label: this.DOWFULL[this.parse(iso).getDay()] + ' ' + this.parse(iso).getDate() };
+      })
+    );
+
+    const openTotal = s.tasks.filter((t) => !t.done).length;
+
+    const navItems = [
+      { key: 'tasks', label: 'Tasks', count: openTotal },
+      { key: 'today', label: 'Today', count: this.forDate(this.TODAY).filter((t) => !t.done).length },
+      { key: 'week', label: 'Week', count: this.visible(s.tasks.filter((t) => t.date && t.date >= this.WEEK_START && t.date <= weekEndIso)).length },
+    ].map((n) => ({
+      label: n.label,
+      count: n.count,
+      bg: s.view === n.key ? '#EEF1FF' : 'transparent',
+      ink: s.view === n.key ? '#2F44C8' : '#4C4C44',
+      weight: s.view === n.key ? 600 : 500,
+      go: () => this.setState({ view: n.key }),
+    }));
+
+    return {
+      navItems,
+      isDay: s.view === 'today',
+      isWeek: s.view === 'week',
+      isTasks: s.view === 'tasks',
+      dayTitle: this.longLabel(s.date),
+      daySummary: scheduled.length + ' scheduled · ' + unscheduled.length + ' unscheduled',
+      prevDay: () => this.setState({ date: this.shift(s.date, -1) }),
+      nextDay: () => this.setState({ date: this.shift(s.date, 1) }),
+      goToday: () => this.setState({ date: this.TODAY, view: 'today' }),
+      strip, hours, blocks, lookahead,
+      unscheduled: unscheduled.map((t) => this.taskChip(t)),
+      noUnscheduled: unscheduled.length === 0,
+      weekTitle: 'September 14 – 20',
+      weekDays,
+      unassigned: unassignedList.map((t) => this.taskChip(t)),
+      unassignedCount: unassignedList.length === 1 ? '1 task waiting' : unassignedList.length + ' tasks waiting',
+      overDay: this.allowDrop,
+      dropUnassign: (e) => { e.preventDefault(); if (s.dragId != null) { this.patch(s.dragId, { date: null, start: null, end: null }); this.setState({ dragId: null }); } },
+      tasksSummary: openTotal + ' open · ' + unassignedList.length + ' still need a day',
+      taskGroups: groups.map((g) => ({
+        label: g.label,
+        count: g.items.length,
+        items: g.items.map((t) => {
+          const c = this.color(t.color);
+          return {
+            title: t.title,
+            bar: c.bar,
+            mark: t.done ? '✓' : '',
+            strike: t.done ? 'line-through' : 'none',
+            titleInk: t.done ? '#A6A69C' : '#23231F',
+            checkBg: t.done ? '#2F44C8' : 'transparent',
+            checkBorder: t.done ? '#2F44C8' : '#CFCFC6',
+            range: t.start ? t.start + ' – ' + t.end : '',
+            day: t.date || '',
+            toggle: () => this.toggleDone(t.id),
+            assign: (e) => this.patch(t.id, { date: e.target.value || null, start: e.target.value ? t.start : null, end: e.target.value ? t.end : null }),
+          };
+        }),
+      })),
+      dayOptions,
+      modalOpen: s.modalOpen,
+      openNew: () => this.setState({ modalOpen: true, draftTitle: '', draftDay: '', draftStart: '', draftEnd: '', draftColor: 'blue' }),
+      closeModal: () => this.setState({ modalOpen: false }),
+      stop: (e) => e.stopPropagation(),
+      draftTitle: s.draftTitle,
+      draftDay: s.draftDay,
+      draftStart: s.draftStart,
+      draftEnd: s.draftEnd,
+      setDraftTitle: (e) => this.setState({ draftTitle: e.target.value }),
+      setDraftDay: (e) => this.setState({ draftDay: e.target.value }),
+      setDraftStart: (e) => this.setState({ draftStart: e.target.value }),
+      setDraftEnd: (e) => this.setState({ draftEnd: e.target.value }),
+      swatches: Object.keys(this.PALETTE).map((k) => ({
+        bg: this.PALETTE[k].bar,
+        ring: s.draftColor === k ? '#2F44C8' : this.PALETTE[k].bar,
+        pick: () => this.setState({ draftColor: k }),
+      })),
+      submitNew: (e) => {
+        e.preventDefault();
+        if (!s.draftTitle.trim()) return;
+        this.addTask({ title: s.draftTitle.trim(), color: s.draftColor, date: s.draftDay || null, start: s.draftStart || null, end: s.draftStart ? (s.draftEnd || this.fmt(this.mins(s.draftStart) + 60)) : null });
+        this.setState({ modalOpen: false, draftTitle: '' });
+      },
+      quickAdd: (e) => {
+        e.preventDefault();
+        if (!s.draftTitle.trim()) return;
+        this.addTask({ title: s.draftTitle.trim(), color: 'blue' });
+        this.setState({ draftTitle: '' });
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>
