@@ -1,276 +1,169 @@
 # DoneIt Planner
 
-> **A tactile daily and weekly personal planning application designed to turn a list of tasks into a realistic, conflict-free schedule.**
+A tactile daily and weekly planner that turns a list of tasks into a realistic, conflict-free schedule, and keeps working with no internet connection.
 
-[![PWA Ready](https://img.shields.io/badge/PWA-Ready-2F44C8.svg)](./manifest.json)
-[![Database](https://img.shields.io/badge/Backend-Supabase-3ECF8E.svg)](https://supabase.com)
-[![Mobile Optimized](https://img.shields.io/badge/UI-Mobile%20Optimized-blueviolet.svg)](#mobile-experience)
-[![Dark Mode](https://img.shields.io/badge/Theme-Dark%20Mode-121215.svg)](#dark-mode)
+It answers three questions:
 
----
+1. **What do I need to do?** (Tasks)
+2. **Which day will I do it?** (Week)
+3. **What time will I do it?** (Day)
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Core Planning Philosophy](#core-planning-philosophy)
-- [Key Features](#key-features)
-  - [Mobile Optimization & Navigation](#mobile-optimization--navigation)
-  - [Day Schedule & Live Multi-Hour Drag/Resize](#day-schedule--live-multi-hour-dragresize)
-  - [Smart Time Input & Conflict Prevention](#smart-time-input--conflict-prevention)
-  - [Forthcoming Days Dropdown](#forthcoming-days-dropdown)
-  - [Dark Mode & Settings](#dark-mode--settings)
-  - [Week View Focus](#week-view-focus)
-  - [Progressive Web App (PWA)](#progressive-web-app-pwa)
-  - [Supabase Cloud Sync & Offline Support](#supabase-cloud-sync--offline-support)
-- [Application Architecture](#application-architecture)
-- [Database Schema & Security](#database-schema--security)
-- [User Workflows](#user-workflows)
-- [Local Development](#local-development)
-- [Project File Structure](#project-file-structure)
+A task doesn't need a day or a time when you create it. It moves from *unassigned*, to *assigned to a day*, to *scheduled at a time* as your plans firm up.
 
 ---
 
-## Overview
+## Features
 
-**DoneIt Planner** is a lightweight, responsive planning web application that answers three core questions:
+### Planning
+- **Day view**: a timeline from 06:00 to 23:00 that grows to fit early or late tasks, or switches to the full 24 hours. Tap a slot to add a task there. Drag a task to move it, and drag its top or bottom edge to resize it in 15-minute steps. A red line marks the current time.
+- **Week view**: today's column sits at the left, with the next six days to the right and an *Unassigned* column. Earlier days of the week are one scroll to the left. Drag tasks between days. A timed task keeps its time on the new day if that slot is free there.
+- **Tasks view**: tasks grouped as Overdue, Unassigned, Today, Tomorrow, the next five days, Later, and Completed earlier. Includes search across titles and notes.
+- **Quick add**: type `Gym tomorrow 6pm` or `Standup mon 9:15-9:30`, and a preview shows how the day and time were read before the task is added.
+- **Smart time inputs**: `[HH]:[MM]` fields that move the cursor forward for you. For example, `8` becomes `08` and jumps to the minutes. The end time follows the start (plus one hour) until you change it yourself.
+- **No double booking**: overlapping times are blocked when you create, edit, drag, drop or resize a task, with a message naming the task in the way.
+- **Edit anything**: title, day, time, colour and notes. Every delete, move and resize has an **Undo** button.
 
-1. **What do I need to do?** (Tasks View)
-2. **Which day am I going to do it?** (Week View)
-3. **What time am I going to do it?** (Day View)
+### Reminders
+- Give any timed task a reminder: at the start time, or 5 minutes to 1 day before. You can also set a default reminder for new timed tasks.
+- **While DoneIt is open or in the background**, reminders are scheduled on the device. They work offline and without an account. They appear as an in-app banner when the app is on screen, and as a system notification when it isn't.
+- **While DoneIt is closed**, reminders arrive as Web Push notifications sent by a Supabase Edge Function. This needs a signed-in account and an internet connection.
+- Both paths tag each notification with the same ID, so you never get the same reminder twice. Tapping a notification opens that task's day.
+- On iPhone and iPad, web notifications only work after DoneIt is added to the Home Screen (iOS 16.4 or later).
 
-It bridges the gap between simple to-do lists (which lack realistic time constraints) and heavy calendar software (which demands rigid event metadata).
+### Works offline
+- Once the app has been opened or installed, it starts **with no network at all**.
+- Every task lives in a database on the device (IndexedDB). You can add, edit, move and delete tasks offline, and the changes sync automatically when the connection returns.
+- If two devices edit the same task while one was offline, the more recent edit wins.
+- A small status line shows *Synced*, *Syncing*, *Offline: 3 changes saved on this device*, or *Sign in to sync*.
+- **Use it without an account**: everything stays on the device. Sign in later and those tasks are uploaded to your account.
+
+### Everything else
+- Installable on Windows, macOS, Android and iOS, with an in-app prompt when a new version is ready.
+- Light, dark or automatic theme, a roomy or compact timeline, and an option to show or hide completed tasks.
+- Mouse, touch (long-press to drag) and keyboard support. Press `?` for shortcuts: `N` new task, `1`/`2`/`3` switch views, `T` today, `←`/`→` change day, `/` search.
+- Mobile layout with a bottom navigation bar, plus a desktop sidebar.
 
 ---
 
-## Core Planning Philosophy
+## Tech stack
 
-The application distinguishes between **having a task** and **scheduling a task**. 
+| Area | Choice |
+|---|---|
+| UI | React 19 + TypeScript |
+| Build | Vite |
+| Styling | Tailwind CSS v4, with light and dark theme tokens in [src/index.css](src/index.css) |
+| Offline app shell | vite-plugin-pwa with a custom Workbox service worker ([src/sw.ts](src/sw.ts)): precaching, push, notification clicks |
+| Reminders | On-device scheduler, plus Web Push sent by a Supabase Edge Function on a pg_cron schedule |
+| On-device database | Dexie (IndexedDB) |
+| Backend | Supabase (Auth, Postgres with Row Level Security, Realtime) |
+| Drag & drop | dnd-kit (mouse, touch, keyboard) |
+| Dates / validation | date-fns, Zod |
+| Tests | Vitest (logic and sync engine), Playwright (end-to-end, including offline) |
 
-A task does not need to have a day or time assigned at the moment of creation:
+---
+
+## How offline sync works
 
 ```text
-TASK (What?)
-  │
-  ├── Unassigned (Inbox of ideas)
-  │
-  └── Assigned to a Day (Which day?)
-        │
-        ├── Unscheduled (Committed to the day, time flexible)
-        │
-        └── Scheduled (What time?)
-              └── e.g., 08:57 – 10:30 (Fixed timeline block)
+ UI ──reads/writes──▶ IndexedDB (Dexie) ◀──▶ Sync engine ◀──▶ Supabase
+                       source of truth        push dirty rows    planner_tasks
+                       for every screen       pull changes       + realtime feed
 ```
 
-Tasks move naturally down this hierarchy as your day takes shape.
+- **Write locally first.** Each edit is saved to IndexedDB immediately and marked `dirty`. The interface never waits for the network.
+- **Push.** Dirty tasks are upserted to `planner_tasks`. A database trigger ignores any write older than the server's copy, and when that happens the device takes the server's newer version.
+- **Pull.** Rows changed since the last sync are fetched, using a server timestamp as the cursor, and applied unless the device has unsent edits to that task.
+- **When it runs:** on start, on reconnect, when the app regains focus, shortly after each edit, every minute, and on realtime events.
+- **Deletes** are soft deletes, so a device that was offline still learns about them.
+- **Sign-in state** is cached on the device, so the planner opens straight into your tasks offline even after the login token has expired. Sync resumes once you're online and signed in.
+
+The engine is in [src/sync/engine.ts](src/sync/engine.ts), and its behaviour is covered by [src/sync/engine.test.ts](src/sync/engine.test.ts).
 
 ---
 
-## Key Features
+## Getting started
 
-### Mobile Optimization & Navigation
-- **Responsive Layout**: Adapts dynamically between desktop and mobile screen sizes (`< 768px`).
-- **Mobile Header**: Sticky top bar showing app branding, quick task creation (`+ Task`), and instant dark mode toggle.
-- **Bottom Navigation Bar**: Fixed bottom bar providing thumb-friendly access in the requested workflow order:
-  1. **Tasks** (Capture & triage)
-  2. **Today** (Day planner & timeline)
-  3. **Week** (7-day distribution & planning)
-  4. **Settings** (Profile, theme, install, logout)
-- **Stacked Layout**: Day timeline and unscheduled task queues stack cleanly on small viewports with comfortable touch targets.
-
-### Day Schedule & Live Multi-Hour Drag/Resize
-- **Tactile Drag & Resize**: Each scheduled task block features top and bottom resize handles.
-  - Drag the bottom edge downwards to extend duration across multiple hours (e.g. from 6:00 to 8:00, 9:00, etc.).
-  - Drag the top edge to adjust the task start time.
-  - Supports both **mouse** and **touch** gestures with 15-minute fluid snapping.
-- **Accessible 01:00 to 24:00 Range**:
-  - Comfortable default schedule covers daytime hours (`06:00` to `22:00`).
-  - Automatically expands if any task is scheduled in earlier or later hours.
-  - Manual expansion controls: `▲ Show earlier hours (01:00 – ...)` and `▼ Show later hours (... – 24:00)`.
-  - Toggle between compact 6–22h view and full 24h view with one tap.
-
-### Smart Time Input & Conflict Prevention
-- **Segmented Time Inputs (`[ HH ] : [ MM ]`)**:
-  - **Auto-Advancing Cursor**: Typing an hour digit $\ge 3$ (e.g., `8` or `9`) automatically formats to `08` and jumps focus straight to the minutes field.
-  - Typing two digits (e.g., `14` or `08`) immediately advances cursor to minutes.
-  - Pressing `:` or `Enter` shifts focus to minutes; `Backspace` on an empty minute field returns to hour.
-  - **Arbitrary Minute Precision**: Schedule tasks at exact minutes such as `08:57` or `14:32`.
-  - Quick duration chips: `+30m`, `+1h`, `+2h`, and `Clear`.
-- **Slot Conflict Validation**:
-  - Real-time overlap detector checks if the candidate time range overlaps with any other task on that day.
-  - Displays a clean SVG warning message: `Slot conflict: "[Task Name]" is already scheduled ([Start] – [End])`.
-  - Blocks submission while a conflict is present, preventing double bookings.
-
-### Forthcoming Days Dropdown
-- Day assignment dropdowns start from **Today onwards** (e.g., *Today*, *Tomorrow*, and the upcoming 14 days).
-- Past date options are preserved for previously scheduled tasks so historical data remains intact.
-
-### Dark Mode & Settings
-- **Settings Section**: Accessible at the bottom of the sidebar on desktop and via a slide-up sheet on mobile:
-  - **User Profile**: Displays user initials avatar, full name, and email address.
-  - **Dark Mode Switch**: Smooth animated switch with SVG icons (strictly zero emojis).
-  - **PWA Download**: Dedicated button to trigger standalone app installation.
-  - **Log Out**: Secure authentication sign-out button.
-- **Tailored Palette**: Custom HSL-tuned dark background (`#121215`), surfaces (`#1B1B20`), borders (`#2A2A33`), and high-contrast dark mode task chips. Persisted in `localStorage` (`doneit_theme`).
-
-### Week View Focus
-- **Auto-Scroll to Today**: Opening the Week tab automatically centers the view on Today's column.
-- Previous days remain to the left and can be reviewed by scrolling back.
-- Past days feature subtle visual dimming (`0.7` opacity) and a `PAST` badge for temporal clarity.
-
-### Progressive Web App (PWA)
-- Fully installable on **Windows**, **macOS** (Chrome, Edge), **iOS** (Safari "Add to Home Screen"), and **Android** (Chrome).
-- Offline asset caching powered by Service Worker (`sw.js`).
-- Complete web app manifest (`manifest.json`) with maskable application icons.
-
-### Supabase Cloud Sync & Offline Support
-- Real-time synchronization across devices using Supabase PostgreSQL and Realtime WebSockets (`postgres_changes`).
-- Instant optimistic UI updates with automatic fallback to `localStorage`.
-- Unobtrusive status: Clean interface with no unnecessary sync banners.
-
----
-
-## Application Architecture
-
-```text
-┌────────────────────────────────────────────────────────┐
-│                   Client Browser / PWA                 │
-│                                                        │
-│   index.html (HTML5, Vanilla CSS, Templates)           │
-│   ├── Reactive Template Engine (<x-dc>, <sc-if>)       │
-│   ├── Component Logic (DCLogic extends React.Component)│
-│   └── Local Cache & Optimistic State (localStorage)    │
-└───────────┬────────────────────────────────┬───────────┘
-            │                                │
-     Offline Cache (SW)              REST & WebSockets
-            │                                │
-┌───────────▼───────────┐        ┌───────────▼───────────┐
-│     sw.js (PWA Cache) │        │   Supabase Cloud      │
-│  - Static assets      │        │   ├── Authentication  │
-│  - App Shell          │        │   ├── PostgreSQL      │
-│  - Offline fallback   │        │   └── Realtime Engine │
-└───────────────────────┘        └───────────────────────┘
-```
-
----
-
-## Database Schema & Security
-
-The application communicates with a Supabase PostgreSQL table named `public.tasks`:
-
-### Table Structure
-
-```sql
-CREATE TABLE public.tasks (
-  id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  title text NOT NULL,
-  color text DEFAULT 'blue',
-  date text,               -- Format: YYYY-MM-DD
-  start text,              -- Format: HH:MM
-  end text,                -- Format: HH:MM
-  done boolean DEFAULT false,
-  created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
-);
-```
-
-### Row Level Security (RLS)
-
-Ensure RLS is enabled so users can only access their own data:
-
-```sql
-ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
-
--- Select policy
-CREATE POLICY "Users can view own tasks" 
-ON public.tasks FOR SELECT 
-USING (auth.uid() = user_id);
-
--- Insert policy
-CREATE POLICY "Users can create own tasks" 
-ON public.tasks FOR INSERT 
-WITH CHECK (auth.uid() = user_id);
-
--- Update policy
-CREATE POLICY "Users can update own tasks" 
-ON public.tasks FOR UPDATE 
-USING (auth.uid() = user_id);
-
--- Delete policy
-CREATE POLICY "Users can delete own tasks" 
-ON public.tasks FOR DELETE 
-USING (auth.uid() = user_id);
-```
-
----
-
-## User Workflows
-
-### 1. Creating and Scheduling a Task
-
-1. Tap **+ New Task** (or click any empty time slot in the Day schedule).
-2. Enter the task title (e.g., `Team Sync`).
-3. Select the day from the **Day** dropdown (defaults to Today).
-4. Type Start Time:
-   - Type `8` → focus moves automatically to minutes.
-   - Type `30` → Start is `08:30`. End automatically defaults to `09:30`.
-5. A randomized color is pre-selected (or pick another swatch).
-6. Click **Add Task**. The task appears on the timeline.
-
-### 2. Extending Task Duration
-
-1. In the **Today** view, locate the task card on the timeline.
-2. Hover or tap the bottom edge handle (marked by a subtle drag bar).
-3. Drag downward to stretch the block to `11:00`.
-4. Release to commit the updated duration to Supabase.
-
----
-
-## Local Development
-
-Because DoneIt Planner uses standard web standards and client-side compilation, you can run it locally without a heavy build step:
-
-### Running with a Local Server
-
-Using Node.js:
 ```bash
-npx serve .
+npm install
+npm run dev        # http://localhost:5173
 ```
 
-Or using Python:
-```bash
-python -m http.server 3000
-```
+Supabase credentials are read from [.env](.env) (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). The anon key is a public client key: access is protected by Row Level Security. Put local overrides in `.env.local`. If no credentials are set, the app runs in device-only mode.
 
-Open `http://localhost:3000` in your web browser.
+### Database setup (one time)
 
-### Supabase Configuration
+Run these three files in order, either in the Supabase SQL editor or all at once with `supabase db push`. In the SQL editor, open a new query, paste **the whole file**, and click Run **with no text selected**. If text is selected, the editor runs only the selection. Each file can be run again safely, and if any statement fails, nothing from that file is applied.
 
-Supabase credentials are configured in `index.html`:
+1. [20261002000000_planner_tasks.sql](supabase/migrations/20261002000000_planner_tasks.sql) creates `public.planner_tasks` (UUID ids and check constraints), the last-write-wins trigger, Row Level Security, and Realtime.
+2. [20261002000100_copy_v1_tasks.sql](supabase/migrations/20261002000100_copy_v1_tasks.sql) copies tasks from the v1 `public.tasks` table. Invalid legacy dates and times are repaired or dropped, re-running won't create duplicates, and the old table is left untouched. Skip this file on a brand-new project.
+3. [20261002000200_reminders.sql](supabase/migrations/20261002000200_reminders.sql) adds the reminder columns, push subscriptions, and delivery tracking.
 
-```javascript
-const SUPABASE_URL = 'https://<YOUR-PROJECT-REF>.supabase.co';
-const SUPABASE_KEY = '<YOUR-ANON-KEY>';
-```
+All three are tested against real Postgres (PGlite) with messy v1 data. If you sync before running step 3, the app keeps syncing everything except reminders.
+
+### Reminders when the app is closed (optional)
+
+Reminders already work on the device without any of this. These steps add background push. You need the [Supabase CLI](https://supabase.com/docs/guides/cli).
+
+1. **Keys.** `supabase/functions/.env` holds the VAPID key pair and a cron secret. It is git-ignored, and its public key matches `VITE_VAPID_PUBLIC_KEY` in `.env`. Change `VAPID_SUBJECT` to your own `mailto:` address. To make new keys, run `npx web-push generate-vapid-keys`, then update both files.
+2. **Deploy the function:**
+   ```bash
+   supabase link --project-ref oqdkkwchwyurvwpwtsft
+   supabase secrets set --env-file supabase/functions/.env
+   supabase functions deploy send-reminders --no-verify-jwt
+   ```
+   `--no-verify-jwt` is needed because the scheduler authenticates with `CRON_SECRET` instead of a user login.
+3. **Schedule it:** open [supabase/reminders_cron.sql](supabase/reminders_cron.sql), replace `<CRON_SECRET>` with the value from `supabase/functions/.env`, and run it in the SQL editor. It calls the function every minute, and the secret is stored in Supabase Vault.
+4. In the app, turn on **Settings → Notifications** and allow notifications when the browser asks.
+
+Users of the previous version stay signed in after upgrading, because the same Supabase session is reused.
+
+### Scripts
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server with hot reload (the service worker is disabled in dev) |
+| `npm run build` | Type-check and production build into `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm test` | Unit tests (scheduling rules, quick-add parser, time inputs, sync engine) |
+| `npm run test:e2e` | Playwright tests on desktop and mobile: offline launch, drag, resize, undo, conflicts, reminders, push handling |
+
+To try offline mode: run `npm run build && npm run preview`, open the app once, then go offline in DevTools (Network → Offline) and reload.
 
 ---
 
-## Project File Structure
+## Deployment
+
+The build is a static site, so any static host works.
+
+- **GitHub Pages**: [.github/workflows/deploy.yml](.github/workflows/deploy.yml) tests, builds and deploys on every push to `main`. In the repository settings, set **Pages → Source** to **GitHub Actions**. The workflow sets the sub-path automatically.
+- **Vercel / Netlify / Cloudflare Pages**: build command `npm run build`, output directory `dist`.
+- **Under a sub-path elsewhere**: build with `BASE_PATH=/your-path/ npm run build`.
+
+---
+
+## Project structure
 
 ```text
-Planner/
-├── index.html       # Primary application markup, styling, and logic
-├── support.js       # Runtime compiler & template engine
-├── sw.js            # Service Worker for offline PWA caching (v3)
-├── manifest.json    # Progressive Web App manifest
-├── icon-192.png     # PWA application icon (192x192)
-├── icon-512.png     # PWA application icon (512x512)
-├── image.jpg        # Auth background image
-├── design.md        # Original design specification
-└── README.md        # Comprehensive documentation
+src/
+├── main.tsx, App.tsx       entry point, auth gate, service-worker registration
+├── app/                    planner shell: routing, sidebar, mobile chrome, shortcuts
+├── views/                  DayView + Timeline, WeekView, TasksView
+├── components/             task modal, time fields, quick add, settings, sync status, dialogs
+├── dnd/                    drag-and-drop setup and drop rules
+├── data/                   Dexie database, task repository, undo-able actions
+├── sync/                   sync engine, Supabase adapter, status store
+├── reminders/              on-device reminder scheduler, Web Push subscription
+├── sw.ts                   service worker: offline precache, push, notification clicks
+├── auth/                   Supabase auth + cached offline profile, sign-in screen
+├── hooks/                  settings/theme, today (midnight rollover), install prompt, toasts
+└── lib/                    pure logic: time, dates, scheduling rules, quick-add parser
+supabase/migrations/        database schema, security policies, v1 data copy, reminders
+supabase/functions/         send-reminders Edge Function (Web Push)
+supabase/reminders_cron.sql schedules the Edge Function every minute
+e2e/                        Playwright tests
+public/                     icons and sign-in background
 ```
-
----
 
 ## License
 
-MIT License. Designed and built with a focus on simplicity, speed, and tactile planning.
+MIT
