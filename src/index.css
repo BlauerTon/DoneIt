@@ -1,0 +1,197 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Figtree', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-accent: #2f44c8;
+  --color-accent-hover: #2637a8;
+  --color-accent-line: #d5daf5;
+}
+
+/* Semantic tokens: one name per role, redefined for dark mode. */
+:root {
+  --bg: #f7f7f4;
+  --card: #ffffff;
+  --sidebar: #ffffff;
+  --line: #e7e7e1;
+  --line-soft: #efefe9;
+  --ink: #23231f;
+  --ink-2: #5c5c54;
+  --muted: #8a8a80;
+  --hover: #f1f1ec;
+  --field: #ffffff;
+  --field-line: #e2e2db;
+  --slot: #efefe9;
+  --avatar: #e4dafb;
+  --avatar-ink: #4a3a7a;
+  --accent-soft: #eef1ff;
+  --col: #fcfcfa;
+  --col-today: #ffffff;
+  --danger: #ce2c31;
+  --danger-bg: #feecee;
+  --danger-line: #f8b4b7;
+  --success: #18794e;
+  --success-bg: #e6f8ed;
+  --success-line: #b0e7c5;
+  --warn: #8a5a00;
+  --warn-bg: #fff4d6;
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #121215;
+  --card: #1b1b20;
+  --sidebar: #16161b;
+  --line: #2a2a33;
+  --line-soft: #23232c;
+  --ink: #f3f3f7;
+  --ink-2: #a1a1b2;
+  --muted: #7a7a8a;
+  --hover: #262630;
+  --field: #131317;
+  --field-line: #30303d;
+  --slot: #22222a;
+  --avatar: #332654;
+  --avatar-ink: #d3bfff;
+  --accent-soft: #222642;
+  --col: #18181d;
+  --col-today: #22232e;
+  --danger: #ff9499;
+  --danger-bg: #38161a;
+  --danger-line: #632128;
+  --success: #7ee2ad;
+  --success-bg: #12301f;
+  --success-line: #1f5a39;
+  --warn: #ffd27a;
+  --warn-bg: #3a2c0c;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-sidebar: var(--sidebar);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-hover: var(--hover);
+  --color-field: var(--field);
+  --color-field-line: var(--field-line);
+  --color-slot: var(--slot);
+  --color-avatar: var(--avatar);
+  --color-avatar-ink: var(--avatar-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-col: var(--col);
+  --color-col-today: var(--col-today);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-line: var(--danger-line);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-success-line: var(--success-line);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+}
+
+/* Task colours: background, accent bar and text, tuned separately for each theme. */
+.chip-blue { --chip-bg: #c3d8ff; --chip-bar: #4f7fe8; --chip-ink: #1b3573; }
+.chip-green { --chip-bg: #bfebcf; --chip-bar: #3fb177; --chip-ink: #144f38; }
+.chip-yellow { --chip-bg: #fbeba4; --chip-bar: #e5ba1e; --chip-ink: #57470b; }
+.chip-orange { --chip-bg: #fed2ae; --chip-bar: #f28b32; --chip-ink: #6b3a13; }
+.chip-purple { --chip-bg: #dccbff; --chip-bar: #8a6be2; --chip-ink: #3b2a69; }
+.chip-pink { --chip-bg: #ffc9dc; --chip-bar: #e56096; --chip-ink: #68203e; }
+.dark .chip-blue { --chip-bg: #1b2c50; --chip-ink: #d2e2ff; }
+.dark .chip-green { --chip-bg: #153a26; --chip-ink: #cbf6de; }
+.dark .chip-yellow { --chip-bg: #3c330f; --chip-ink: #fff3ba; }
+.dark .chip-orange { --chip-bg: #402611; --chip-ink: #ffe0c8; }
+.dark .chip-purple { --chip-bg: #2e1e52; --chip-ink: #ece2ff; }
+.dark .chip-pink { --chip-bg: #451b2e; --chip-ink: #ffd4e4; }
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgb(140 140 150 / 0.3); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(140 140 150 / 0.5); }
+}
+
+@layer components {
+  .label-mono {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 9px;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px 14px;
+    transition: background-color 120ms, border-color 120ms, color 120ms, opacity 120ms;
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: var(--color-accent); color: #fff; }
+  .btn-primary:not(:disabled):hover { background: var(--color-accent-hover); }
+  .btn-ghost { border: 1px solid var(--line); background: var(--card); color: var(--ink-2); }
+  .btn-ghost:hover { background: var(--hover); }
+  .btn-accent-outline { border: 1px solid var(--color-accent-line); background: var(--card); color: var(--color-accent); }
+  .dark .btn-accent-outline { border-color: #343b6b; color: #9aa8ff; }
+  .btn-accent-outline:hover { background: var(--hover); }
+  .field {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--field-line);
+    border-radius: 10px;
+    background: var(--field);
+    color: var(--ink);
+    font-size: 14px;
+  }
+  .field::placeholder { color: var(--muted); }
+  .field:focus { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px rgb(47 68 200 / 0.18); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+  .chip { background: var(--chip-bg); color: var(--chip-ink); border-left: 3px solid var(--chip-bar); }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes sheet-in {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

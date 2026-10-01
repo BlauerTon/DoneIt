@@ -1,0 +1,15 @@
+{
+  // The service worker runs in a worker scope (no DOM), so it is type-checked separately.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "WebWorker"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "types": []
+  },
+  "files": ["src/sw.ts"]
+}
