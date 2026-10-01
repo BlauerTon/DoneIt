@@ -1,0 +1,13 @@
+// Cloudflare Workers deployment for DoneIt Planner (static assets only, no server code).
+// Build first with `npm run build`, then `npx wrangler deploy` uploads just the dist/ folder.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "doneit",
+  "compatibility_date": "2026-09-12",
+  "assets": {
+    // Only the production build, never the repo root (which includes node_modules).
+    "directory": "./dist",
+    // Unknown paths serve the app; views are hash-routed (#/week), so this is just a safety net.
+    "not_found_handling": "single-page-application"
+  }
+}
