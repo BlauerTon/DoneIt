@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Planner } from './app/Planner';
 import { useAuth } from './auth/AuthProvider';
-import { AuthScreen, Splash } from './auth/AuthScreen';
+import { AuthScreen, ResetPasswordScreen, Splash } from './auth/AuthScreen';
 import { Toaster } from './components/Toaster';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import { useApplyTheme } from './hooks/useSettings';
@@ -17,6 +17,7 @@ export function App() {
     <>
       {status === 'loading' && <Splash />}
       {status === 'signedOut' && <AuthScreen />}
+      {status === 'recovery' && <ResetPasswordScreen />}
       {status === 'signedIn' && profile && (
         <>
           <Planner key={profile.id} profile={profile} onRequestSignIn={() => setSignInOpen(true)} />

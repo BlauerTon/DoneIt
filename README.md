@@ -100,6 +100,15 @@ Run these three files in order, either in the Supabase SQL editor or all at once
 
 All three are tested against real Postgres (PGlite) with messy v1 data. If you sync before running step 3, the app keeps syncing everything except reminders.
 
+### Password reset (one time)
+
+**Forgot password?** on the sign-in screen emails a reset link that opens the app's start page, where the user chooses a new password. Supabase only redirects to addresses you allow. In the dashboard, open **Authentication → URL Configuration** and:
+
+- set **Site URL** to the deployed app, e.g. `https://your-app.workers.dev/`
+- add every address the app runs at to **Redirect URLs**, including `http://localhost:5173/` for development
+
+If an address is missing, the link opens the Site URL instead. The email text can be changed under **Authentication → Emails → Reset Password**; keep `{{ .ConfirmationURL }}` as the link.
+
 ### Reminders when the app is closed (optional)
 
 Reminders already work on the device without any of this. These steps add background push. You need the [Supabase CLI](https://supabase.com/docs/guides/cli).
